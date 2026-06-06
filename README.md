@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="favicon.svg" width="96" height="96" alt="存檔管理小工具 logo">
+
 # 💾 存檔管理小工具
 
 **書籤式存檔管理工具** — 在任何網站備份 / 還原 `localStorage`，並可跨裝置匯出匯入。<br>
