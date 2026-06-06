@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>存檔管理小工具 · 安裝教學</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card2: #273449;
+    --line: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #22c55e;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1e3a5f 0%, var(--bg) 55%);
+    color: var(--text);
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { text-align: center; margin-bottom: 40px; }
+  h1 { font-size: 2.2rem; margin: 0 0 12px; }
+  h1 .emoji { filter: drop-shadow(0 2px 8px rgba(56,189,248,.4)); }
+  .subtitle { color: var(--muted); font-size: 1.08rem; margin: 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+  h2 { font-size: 1.35rem; margin: 0 0 6px; display: flex; align-items: center; gap: 12px; }
+  h2 .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent); color: #04263b; font-weight: 800; font-size: 1.05rem;
+    flex: none;
+  }
+  .lead { color: var(--muted); margin: 0 0 4px 46px; font-size: .95rem; }
+
+  /* 書籤列示意圖 */
+  .browser {
+    margin: 18px 0 6px; border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden; background: #0b1120;
+  }
+  .browser .bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: #1e293b; border-bottom: 1px solid var(--line);
+  }
+  .browser .dot { width: 11px; height: 11px; border-radius: 50%; background: #475569; }
+  .browser .url {
+    flex: 1; background: #0b1120; border-radius: 20px; padding: 5px 14px;
+    font-size: .8rem; color: var(--muted);
+  }
+  .browser .bmbar {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: #131c30; font-size: .82rem; color: var(--muted);
+    border-bottom: 2px dashed var(--accent);
+  }
+  .browser .bmbar .here {
+    color: var(--accent); font-weight: 700; border: 2px dashed var(--accent);
+    border-radius: 8px; padding: 4px 12px; background: rgba(56,189,248,.08);
+  }
+  .browser .bmbar .ic { opacity: .5; }
+
+  .drag-zone { text-align: center; padding: 6px 0 0; }
+  .arrow-up { font-size: 1.6rem; color: var(--accent); animation: bob 1.2s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .bm-center { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 4px 0 0; }
+  .bookmarklet {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--accent), #0ea5e9);
+    color: #04263b; font-weight: 800; font-size: 1.15rem;
+    padding: 14px 28px; border-radius: 12px; text-decoration: none;
+    cursor: grab; user-select: none;
+    box-shadow: 0 6px 20px rgba(56,189,248,.4);
+    transition: transform .12s ease;
+  }
+  .bookmarklet:active { cursor: grabbing; transform: scale(.96); }
+  .grab-hint { color: var(--accent); font-size: .9rem; font-weight: 600; }
+
+  details.alt {
+    margin-top: 22px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--card2); overflow: hidden;
+  }
+  details.alt > summary {
+    cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: .92rem;
+    list-style: none; user-select: none;
+  }
+  details.alt > summary::-webkit-details-marker { display: none; }
+  details.alt > summary::before { content: "▸ "; color: var(--accent); }
+  details.alt[open] > summary::before { content: "▾ "; }
+  details.alt .inner { padding: 0 16px 16px; }
+
+  button.btn {
+    background: var(--accent2); color: #052e13;
+    border: none; border-radius: 8px; font-weight: 700;
+    padding: 11px 18px; font-size: .95rem; cursor: pointer;
+  }
+  button.btn:hover { filter: brightness(1.08); }
+  pre {
+    background: #0b1120; border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; overflow-x: auto; font-size: .78rem; color: #cbd5e1;
+    margin: 12px 0 0; white-space: pre-wrap; word-break: break-all; max-height: 120px;
+  }
+  ol.steps { padding-left: 0; margin: 14px 0 0; list-style: none; counter-reset: s; }
+  ol.steps li {
+    position: relative; padding: 4px 0 16px 44px; margin: 0;
+    border-left: 2px solid var(--line); margin-left: 14px;
+  }
+  ol.steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: -15px; top: 0;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent2); color: #052e13; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; font-size: .85rem;
+  }
+  ul.feat { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+  ul.feat li { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 13px 16px; font-size: .95rem; }
+  ul.feat b { color: var(--accent); }
+  kbd {
+    background: #0b1120; border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 6px; padding: 2px 8px; font-size: .82rem; font-family: monospace;
+  }
+  .faq dt { font-weight: 700; margin-top: 16px; color: #cbd5e1; }
+  .faq dt:first-child { margin-top: 4px; }
+  .faq dd { margin: 4px 0 0; color: var(--muted); font-size: .92rem; }
+  .tip { font-size: .9rem; color: var(--muted); background: #0b1120; border-radius: 10px; padding: 12px 14px; margin: 16px 0 0; border-left: 3px solid var(--accent2); }
+  footer { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 30px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px);
+    background: var(--accent2); color: #052e13; font-weight: 700;
+    padding: 12px 22px; border-radius: 10px; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="emoji">💾</span> 存檔管理小工具</h1>
+    <p class="subtitle">幫你把網站存檔備份、搬到別台電腦的小幫手。<br>不用懂程式，照著下面三步做就好。</p>
+  </header>
+
+  <!-- 步驟一：安裝 -->
+  <div class="card">
+    <h2><span class="badge">1</span> 把按鈕放到「書籤列」</h2>
+    <p class="lead">書籤列就是瀏覽器上方那排放網站捷徑的地方。把下面的藍色按鈕<strong>用滑鼠按住、拖上去放開</strong>就好。</p>
+
+    <div class="browser" aria-hidden="true">
+      <div class="bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="url">🔒 你的瀏覽器⋯⋯</span>
+      </div>
+      <div class="bmbar">
+        <span class="here">⭐ 放這裡</span>
+        <span class="ic">📁 我的最愛</span>
+        <span class="ic">📁 購物</span>
+        <span class="ic">＋ ⋯</span>
+      </div>
+    </div>
+
+    <div class="drag-zone">
+      <div class="arrow-up">⬆️</div>
+      <div class="bm-center">
+        <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，拖到上面那排！">💾 存檔管理小工具</a>
+        <span class="grab-hint">👆 按住這顆，拖到上方書籤列放開</span>
+      </div>
+    </div>
+
+    <details class="alt">
+      <summary>拖不動？或看不到書籤列？點這裡用「複製貼上」的方式</summary>
+      <div class="inner">
+        <p style="font-size:.92rem">沒問題，改用這個方法也一樣：</p>
+        <ol style="font-size:.92rem;padding-left:20px;margin:0">
+          <li>先按一下下面的綠色按鈕，把程式碼複製起來。</li>
+          <li>在書籤列上<strong>按右鍵 → 新增書籤 / 加入網頁</strong>。</li>
+          <li>名稱隨便打（例如「存檔管理」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
+        </ol>
+        <p style="margin:14px 0 0"><button class="btn" id="copyBtn">📋 複製程式碼</button></p>
+        <pre id="codeBox">載入中…</pre>
+        <p class="tip">看不到書籤列？在 Chrome / Edge 按 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> 就會出現。</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- 步驟二：使用 -->
+  <div class="card">
+    <h2><span class="badge">2</span> 怎麼用</h2>
+    <p class="lead">裝好之後，以後在任何網站都能用它。</p>
+    <ol class="steps">
+      <li>打開你想備份存檔的網站（例如某個網頁遊戲、線上工具）。</li>
+      <li>點一下書籤列上的 <strong>💾 存檔管理小工具</strong>。</li>
+      <li>畫面右邊會滑出一個小視窗，分成<strong>「💾 備份」</strong>和<strong>「🔄 匯出 / 匯入」</strong>兩個分頁。</li>
+      <li>在裡面備份、還原，或匯出帶去別台電腦。看完按右上角 ✕ 就收起來。</li>
+    </ol>
+    <p class="tip">💡 想先試試看？現在就可以在<strong>這個網頁</strong>上點剛裝好的書籤，右邊就會跳出視窗。</p>
+  </div>
+
+  <!-- 步驟三：功能 -->
+  <div class="card">
+    <h2><span class="badge">3</span> 它能做什麼</h2>
+    <ul class="feat">
+      <li><b>備份</b>：把目前的存檔存起來，可以存好幾份（像不同的存檔格），每份都能取名字。</li>
+      <li><b>還原</b>：從備份清單一鍵把某一份存檔復原（復原後頁面會自動重新整理，存檔才會生效）。</li>
+      <li><b>匯出</b>：把你的<strong>所有備份打包成一個檔案</strong>下載，帶到另一台電腦。</li>
+      <li><b>匯入</b>：在另一台電腦讀進那個檔案，備份清單就一起出現，再按「還原」就能用。</li>
+      <li><b>自動保護</b>：還原或匯入前，會自動先幫你備份目前的存檔，萬一按錯也救得回來。</li>
+    </ul>
+  </div>
+
+  <!-- 常見問題 -->
+  <div class="card">
+    <h2><span class="badge">？</span> 新手常見問題</h2>
+    <dl class="faq">
+      <dt>會不會把我的資料偷傳走？</dt>
+      <dd>不會。整個工具只在你自己的瀏覽器裡跑，<strong>沒有任何資料會被上傳</strong>，也沒有伺服器。</dd>
+
+      <dt>怎麼換到另一台電腦用同一份存檔？</dt>
+      <dd>在原本的電腦到「🔄 匯出 / 匯入」分頁按「<strong>匯出所有備份</strong>」下載檔案 → 把檔案傳到新電腦（雲端、隨身碟、傳給自己都行）→ 在新電腦打開同一個網站，點書籤、按「<strong>從檔案匯入</strong>」選那個檔案 → 備份清單出現後，按你要那一份的「<strong>還原</strong>」即可。</dd>
+
+      <dt>點了書籤都沒反應？</dt>
+      <dd>少數網站有比較嚴格的安全限制，會擋住這類小工具，這種情況會跳出提示。換個網站、或在這個教學頁上試就正常。</dd>
+
+      <dt>備份會不會不見？</dt>
+      <dd>備份存在你這台電腦的瀏覽器裡。如果你清掉瀏覽器資料就會一起被清掉，所以重要存檔記得偶爾用「匯出所有備份」存一份檔案備著。</dd>
+    </dl>
+  </div>
+
+  <footer>
+    純在你的瀏覽器運作 · 不收集、不上傳任何資料。
+  </footer>
+</div>
+
+<div class="toast" id="toast">已複製！</div>
+
+<script>
+  // 依目前頁面網址，自動算出工具程式的完整網址，部署到任何網域都能正確指向。
+  var toolUrl = new URL('tool.js', location.href).href;
+
+  // 書籤程式碼：已裝過就直接開窗，否則去本站載入工具。
+  var code = "javascript:(function(){if(window.__SDM__){window.__SDM__.open();return;}" +
+             "var s=document.createElement('script');" +
+             "s.src='" + toolUrl + "?t='+Date.now();" +
+             "s.onerror=function(){alert('這個網站擋住了小工具，沒辦法在這裡使用，換個網站試試。');};" +
+             "document.head.appendChild(s);})();";
+
+  document.getElementById('bookmarklet').setAttribute('href', code);
+  document.getElementById('codeBox').textContent = code;
+
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', function () {
+    var doCopy = navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject();
+    doCopy.then(function () { toast('複製好了！去書籤列貼上吧'); })
+          .catch(function () {
+            var box = document.getElementById('codeBox');
+            var range = document.createRange();
+            range.selectNodeContents(box);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            toast('請按 Ctrl+C 複製已選取的文字');
+          });
+  });
+</script>
+</body>
+</html>
