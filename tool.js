@@ -379,15 +379,15 @@
     // 自動備份不提供覆蓋（它本來就是系統暫存用）。
     if (!r.auto) {
       var overwrite = document.createElement('button');
-      overwrite.className = 'overwrite'; overwrite.textContent = '覆蓋';
-      overwrite.title = '用目前的存檔覆蓋這份備份';
+      overwrite.className = 'overwrite'; overwrite.textContent = '備份至此';
+      overwrite.title = '把目前的存檔備份到這一格（取代原內容）';
       overwrite.addEventListener('click', function () {
         var data = snapshot();
         if (!dataCount(data)) { toast('目前沒有存檔可以覆蓋', true); return; }
-        if (!confirm('要用「目前的存檔」覆蓋備份「' + (r.name || '此備份') + '」嗎？\n這份備份原本的內容會被取代，無法復原。')) return;
+        if (!confirm('要把「目前的存檔」備份到「' + (r.name || '此備份') + '」這一格嗎？\n這份備份原本的內容會被取代，無法復原。')) return;
         putBackup({ id: r.id, name: r.name, origin: ORIGIN, createdAt: Date.now(), data: data })
-          .then(function () { renderBackups(); toast('✓ 已覆蓋：' + (r.name || '此備份')); })
-          .catch(function (e) { toast('覆蓋失敗：' + (e && e.message || e), true); });
+          .then(function () { renderBackups(); toast('✓ 已備份至此：' + (r.name || '此備份')); })
+          .catch(function (e) { toast('備份失敗：' + (e && e.message || e), true); });
       });
       card.appendChild(overwrite);
     }
