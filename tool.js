@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.2';
+  var VERSION = '1.4.3';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -230,7 +230,7 @@
         '<div class="sec on" data-sec="backup">' +
           '<div class="grp-title">備份目前存檔</div>' +
           '<div class="namebox">' +
-            '<input type="text" id="bkName" placeholder="取個名字（選填，例如：通關前）">' +
+            '<input type="text" id="bkName" placeholder="取個名字（選填，按 Enter 直接備份）">' +
           '</div>' +
           '<button class="big green" id="doBackup"><span class="ic">💾</span><span>立即備份<span class="sub">把現在的存檔存起來，之後可以還原</span></span></button>' +
           '<div class="divider"></div>' +
@@ -310,6 +310,10 @@
     addBackup({ uid: genUid(), name: name, origin: ORIGIN, createdAt: Date.now(), data: data })
       .then(function () { $('#bkName').value = ''; renderBackups(); toast('✓ 已備份：' + name); })
       .catch(function (e) { toast('備份失敗：' + (e && e.message || e), true); });
+  });
+  // 在取名框按 Enter＝按「立即備份」。
+  $('#bkName').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('#doBackup').click(); }
   });
 
   /* ---- 清空自動備份 ---- */
