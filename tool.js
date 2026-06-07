@@ -188,9 +188,9 @@
     '.autobox .ahint{font-size:.75rem;color:#64748b;margin:0 0 10px;line-height:1.6;}' +
     '.clearauto{margin-left:auto;background:#273449;color:#fca5a5;border:1px solid #3f2a30;border-radius:7px;padding:5px 10px;font-size:.76rem;font-weight:700;cursor:pointer;}' +
     '.clearauto:hover{background:#7f1d1d;color:#fff;border-color:#7f1d1d;}' +
-    '.bk .restore{background:#16a34a;color:#fff;}' +
-    '.bk .overwrite{background:#273449;color:#fbbf24;border:1px solid #3f3a25;}' +
-    '.bk .overwrite:hover{background:#a16207;color:#fff;border-color:#a16207;}' +
+    '.bk .restore{background:#0284c7;color:#fff;}' +          /* 還原＝藍色 */
+    '.bk .overwrite{background:#16a34a;color:#fff;}' +        /* 備份至此＝綠色，與「立即備份」同色 */
+    '.bk .restore:hover,.bk .overwrite:hover{filter:brightness(1.1);}' +
     '.bk .del{background:#273449;color:#fca5a5;font-size:1rem;padding:9px 11px;}' +
     '.bk .del:hover{background:#7f1d1d;color:#fff;}' +
     '.empty{text-align:center;color:#64748b;padding:26px 10px;font-size:.88rem;line-height:1.7;}' +
