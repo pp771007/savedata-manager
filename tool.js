@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.2.1';
+  var VERSION = '1.3.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -351,13 +351,33 @@
         });
         chain.then(function () {
           renderBackups();
+          // 只匯入一筆：問要不要立刻還原（換電腦的主要情境）。
+          if (toAdd.length === 1) {
+            var only = toAdd[0];
+            toast('✓ 已匯入 1 筆備份');
+            if (confirm('已匯入「' + (only.name || '此備份') + '」。\n要立刻還原（套用到目前網站）嗎？\n目前的存檔會被它取代。\n（系統會自動先幫你備份目前的存檔）\n\n完成後會「重新整理頁面」。')) {
+              performRestore(only);
+              return;
+            }
+            $('.tab[data-tab="backup"]').click();
+            return;
+          }
+          // 多筆：不自動還原，請使用者自行到清單選要還原的那一份。
           $('.tab[data-tab="backup"]').click();
-          toast('✓ 已匯入 ' + toAdd.length + ' 筆備份到清單');
+          toast('✓ 已匯入 ' + toAdd.length + ' 筆備份，請在清單中選擇要還原的備份');
         }).catch(function (err) { toast('匯入失敗：' + (err && err.message || err), true); });
       });
     };
     reader.readAsText(f);
   });
+
+  /* ---- 還原（共用：自動先備份目前存檔，再套用、重新整理） ---- */
+  function performRestore(rec, doneMsg) {
+    return autoBackup().then(function () {
+      applyData(rec.data || {});
+      finishAndReload(doneMsg || '✓ 已還原，正在重新整理…');
+    });
+  }
 
   /* ---- 備份清單 ---- */
   function makeCard(r) {
@@ -378,10 +398,7 @@
     restore.className = 'restore'; restore.textContent = '還原';
     restore.addEventListener('click', function () {
       if (!confirm('要還原「' + (r.name || '此備份') + '」嗎？\n目前的存檔會被它取代。\n（系統會自動先幫你備份目前的存檔）\n\n完成後會「重新整理頁面」，網站才會讀到還原的存檔。')) return;
-      autoBackup().then(function () {
-        applyData(r.data || {});
-        finishAndReload('✓ 已還原，正在重新整理…');
-      });
+      performRestore(r);
     });
 
     var del = document.createElement('button');
