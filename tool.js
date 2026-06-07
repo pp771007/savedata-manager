@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.1';
+  var VERSION = '1.4.2';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -426,20 +426,13 @@
     var ta = $('#ioText'); ta.value = ''; ta.style.display = 'none';
     importBackups(backups);
   }
-  // 按鈕：先試著直接讀剪貼簿，讀得到就直接匯入；讀不到才開框請使用者貼上。
+  // 按鈕：開出輸入框讓使用者貼上（貼上後會自動接著匯入，不必再按按鈕）。
   $('#doPasteImport').addEventListener('click', function () {
     var ta = $('#ioText');
-    var openBox = function () {
-      ta.style.display = 'block'; ta.value = ''; ta.focus();
-      toast('把另一台複製的字串貼到下方框框（貼上後會自動匯入）');
-    };
-    if (navigator.clipboard && navigator.clipboard.readText) {
-      navigator.clipboard.readText().then(function (t) {
-        if (t && t.trim()) importFromText(t); else openBox();
-      }, openBox);
-    } else { openBox(); }
+    ta.style.display = 'block'; ta.value = ''; ta.focus();
+    toast('把另一台複製的字串貼到下方框框（貼上後會自動匯入）');
   });
-  // 在框內貼上後自動匯入，不必再按按鈕。
+  // 在框內貼上後自動匯入。
   $('#ioText').addEventListener('paste', function () {
     var ta = this;
     setTimeout(function () { if (ta.value.trim()) importFromText(ta.value); }, 0);
