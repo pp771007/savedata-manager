@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.0';
+  var VERSION = '1.4.1';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -258,7 +258,7 @@
           '<div class="hint">在這台按「複製」，把字串貼到雲端筆記 / 通訊軟體；到另一台按「貼上字串匯入」即可。</div>' +
           '<button class="big blue" id="doCopy"><span class="ic">📋</span><span>複製備份字串<span class="sub">把所有備份變成一段文字複製起來</span></span></button>' +
           '<button class="big slate" id="doPasteImport"><span class="ic">📝</span><span>貼上字串匯入<span class="sub">把另一台複製的文字貼進來匯入</span></span></button>' +
-          '<textarea id="ioText" placeholder="把備份字串貼在這裡，再按上面的「貼上字串匯入」" style="display:none;width:100%;height:90px;margin-top:10px;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;font-size:.78rem;font-family:monospace;resize:vertical;"></textarea>' +
+          '<textarea id="ioText" placeholder="把備份字串貼在這裡（貼上後會自動匯入）" style="display:none;width:100%;height:90px;margin-top:10px;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;font-size:.78rem;font-family:monospace;resize:vertical;"></textarea>' +
         '</div>' +
 
       '</div>' +
@@ -418,18 +418,31 @@
       } else { manualHint(); }
     });
   });
+  // 解析一段 base64 字串並匯入。
+  function importFromText(text) {
+    var backups;
+    try { backups = parseBackups(fromB64(text)); }
+    catch (err) { toast('字串無法解析，請確認有完整貼上', true); return; }
+    var ta = $('#ioText'); ta.value = ''; ta.style.display = 'none';
+    importBackups(backups);
+  }
+  // 按鈕：先試著直接讀剪貼簿，讀得到就直接匯入；讀不到才開框請使用者貼上。
   $('#doPasteImport').addEventListener('click', function () {
     var ta = $('#ioText');
-    if (ta.style.display === 'none' || !ta.value.trim()) {
+    var openBox = function () {
       ta.style.display = 'block'; ta.value = ''; ta.focus();
-      toast('把另一台複製的字串貼到下方框框，再按一次「貼上字串匯入」');
-      return;
-    }
-    var backups;
-    try { backups = parseBackups(fromB64(ta.value)); }
-    catch (err) { toast('字串無法解析，請確認有完整貼上', true); return; }
-    ta.value = ''; ta.style.display = 'none';
-    importBackups(backups);
+      toast('把另一台複製的字串貼到下方框框（貼上後會自動匯入）');
+    };
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(function (t) {
+        if (t && t.trim()) importFromText(t); else openBox();
+      }, openBox);
+    } else { openBox(); }
+  });
+  // 在框內貼上後自動匯入，不必再按按鈕。
+  $('#ioText').addEventListener('paste', function () {
+    var ta = this;
+    setTimeout(function () { if (ta.value.trim()) importFromText(ta.value); }, 0);
   });
 
   /* ---- 還原（共用：自動先備份目前存檔，再套用、重新整理） ---- */
