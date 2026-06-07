@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -56,6 +56,17 @@
     return openDB().then(function (db) {
       return new Promise(function (res, rej) {
         var r = db.transaction(STORE, 'readwrite').objectStore(STORE).add(rec);
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      });
+    });
+  }
+
+  // 以原本的 id 覆蓋整筆備份（用來把某一份更新成目前的存檔）。
+  function putBackup(rec) {
+    return openDB().then(function (db) {
+      return new Promise(function (res, rej) {
+        var r = db.transaction(STORE, 'readwrite').objectStore(STORE).put(rec);
         r.onsuccess = function () { res(r.result); };
         r.onerror = function () { rej(r.error); };
       });
@@ -178,6 +189,8 @@
     '.clearauto{margin-left:auto;background:#273449;color:#fca5a5;border:1px solid #3f2a30;border-radius:7px;padding:5px 10px;font-size:.76rem;font-weight:700;cursor:pointer;}' +
     '.clearauto:hover{background:#7f1d1d;color:#fff;border-color:#7f1d1d;}' +
     '.bk .restore{background:#16a34a;color:#fff;}' +
+    '.bk .overwrite{background:#273449;color:#fbbf24;border:1px solid #3f3a25;}' +
+    '.bk .overwrite:hover{background:#a16207;color:#fff;border-color:#a16207;}' +
     '.bk .del{background:#273449;color:#fca5a5;font-size:1rem;padding:9px 11px;}' +
     '.bk .del:hover{background:#7f1d1d;color:#fff;}' +
     '.empty{text-align:center;color:#64748b;padding:26px 10px;font-size:.88rem;line-height:1.7;}' +
@@ -362,7 +375,23 @@
       deleteBackup(r.id).then(function () { renderBackups(); toast('已刪除備份'); });
     });
 
-    card.appendChild(info); card.appendChild(restore); card.appendChild(del);
+    card.appendChild(info);
+    // 自動備份不提供覆蓋（它本來就是系統暫存用）。
+    if (!r.auto) {
+      var overwrite = document.createElement('button');
+      overwrite.className = 'overwrite'; overwrite.textContent = '覆蓋';
+      overwrite.title = '用目前的存檔覆蓋這份備份';
+      overwrite.addEventListener('click', function () {
+        var data = snapshot();
+        if (!dataCount(data)) { toast('目前沒有存檔可以覆蓋', true); return; }
+        if (!confirm('要用「目前的存檔」覆蓋備份「' + (r.name || '此備份') + '」嗎？\n這份備份原本的內容會被取代，無法復原。')) return;
+        putBackup({ id: r.id, name: r.name, origin: ORIGIN, createdAt: Date.now(), data: data })
+          .then(function () { renderBackups(); toast('✓ 已覆蓋：' + (r.name || '此備份')); })
+          .catch(function (e) { toast('覆蓋失敗：' + (e && e.message || e), true); });
+      });
+      card.appendChild(overwrite);
+    }
+    card.appendChild(restore); card.appendChild(del);
     return card;
   }
 
