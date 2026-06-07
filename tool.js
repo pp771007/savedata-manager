@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.0';
+  var VERSION = '1.4.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -121,13 +121,20 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
-  // 把多筆備份打包成可攜檔案。
+  // 產生可攜的唯一 ID：跨機器辨識「同一份備份」用，匯入時靠它判斷要覆蓋還是新增。
+  function genUid() {
+    return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+  // UTF-8 字串 ↔ base64：讓備份可用一段文字搬運（複製 / 貼上）。
+  function toB64(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function fromB64(b64) { return decodeURIComponent(escape(atob((b64 || '').replace(/\s+/g, '')))); }
+  // 把多筆備份打包成可攜檔案 / 字串。
   function exportBackupsPayload(backups) {
     return JSON.stringify({
-      type: 'savedata-manager-backups', version: 1, origin: ORIGIN,
+      type: 'savedata-manager-backups', version: 2, origin: ORIGIN,
       exportedAt: new Date().toISOString(), count: backups.length,
       backups: backups.map(function (b) {
-        return { name: b.name, createdAt: b.createdAt, data: b.data, auto: !!b.auto };
+        return { uid: b.uid, name: b.name, createdAt: b.createdAt, data: b.data, auto: !!b.auto };
       })
     }, null, 2);
   }
@@ -241,10 +248,17 @@
         '</div>' +
 
         '<div class="sec" data-sec="io">' +
-          '<div class="hint">把這台電腦的<b>所有備份</b>打包成一個檔案帶走；到另一台電腦匯入後，備份清單就會一起出現。要套用某一份，再到「💾 備份」分頁按「還原」。</div>' +
-          '<button class="big blue" id="doExport"><span class="ic">📤</span><span>匯出所有備份<span class="sub">下載成一個檔案，帶到別台電腦</span></span></button>' +
-          '<button class="big slate" id="doImport"><span class="ic">📥</span><span>從檔案匯入<span class="sub">讀取備份檔，加進備份清單</span></span></button>' +
+          '<div class="hint">把這台電腦的<b>所有備份</b>帶到另一台電腦。匯入時若是<b>同一份</b>備份會直接<b>覆蓋</b>（可拿舊版蓋回現況），新的才會新增。要套用某一份，再到「💾 備份」分頁按「還原」。</div>' +
+          '<div class="grp-title">用檔案搬</div>' +
+          '<button class="big blue" id="doExport"><span class="ic">📤</span><span>匯出成檔案<span class="sub">下載成一個檔案，帶到別台電腦</span></span></button>' +
+          '<button class="big slate" id="doImport"><span class="ic">📥</span><span>從檔案匯入<span class="sub">讀取備份檔，加進 / 覆蓋備份清單</span></span></button>' +
           '<input type="file" id="fileInput" accept=".json,application/json" style="display:none">' +
+          '<div class="divider"></div>' +
+          '<div class="grp-title">用文字字串搬（免存檔）</div>' +
+          '<div class="hint">在這台按「複製」，把字串貼到雲端筆記 / 通訊軟體；到另一台按「貼上字串匯入」即可。</div>' +
+          '<button class="big blue" id="doCopy"><span class="ic">📋</span><span>複製備份字串<span class="sub">把所有備份變成一段文字複製起來</span></span></button>' +
+          '<button class="big slate" id="doPasteImport"><span class="ic">📝</span><span>貼上字串匯入<span class="sub">把另一台複製的文字貼進來匯入</span></span></button>' +
+          '<textarea id="ioText" placeholder="把備份字串貼在這裡，再按上面的「貼上字串匯入」" style="display:none;width:100%;height:90px;margin-top:10px;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;font-size:.78rem;font-family:monospace;resize:vertical;"></textarea>' +
         '</div>' +
 
       '</div>' +
@@ -293,7 +307,7 @@
     var data = snapshot();
     if (!dataCount(data)) { toast('目前沒有存檔可以備份', true); return; }
     var name = $('#bkName').value.trim() || ('備份 ' + fmtTime(Date.now()));
-    addBackup({ name: name, origin: ORIGIN, createdAt: Date.now(), data: data })
+    addBackup({ uid: genUid(), name: name, origin: ORIGIN, createdAt: Date.now(), data: data })
       .then(function () { $('#bkName').value = ''; renderBackups(); toast('✓ 已備份：' + name); })
       .catch(function (e) { toast('備份失敗：' + (e && e.message || e), true); });
   });
@@ -323,7 +337,55 @@
     });
   });
 
-  /* ---- 匯入（加進備份清單） ---- */
+  /* ---- 匯入（共用：以 uid 比對，命中即覆蓋，沒有才新增） ---- */
+  // 不比新舊：命中同一份就用匯入的內容覆蓋（可拿舊版蓋回現況）。
+  function importBackups(backups) {
+    if (!backups || !backups.length) { toast('裡面沒有備份', true); return; }
+    listBackups().then(function (existing) {
+      // uid 優先；舊資料 / 舊格式沒有 uid 時，退而用「名稱＋時間」比對。
+      var byUid = {}, byNK = {};
+      existing.forEach(function (b) {
+        if (b.uid) byUid[b.uid] = b;
+        byNK[(b.name || '') + '|' + b.createdAt] = b;
+      });
+      var added = 0, updated = 0, last = null;
+      var chain = Promise.resolve();
+      backups.forEach(function (b) {
+        chain = chain.then(function () {
+          var match = (b.uid && byUid[b.uid]) || byNK[(b.name || '') + '|' + b.createdAt];
+          var rec = {
+            uid: b.uid || (match && match.uid) || genUid(),
+            name: b.name || (match && match.name) || '匯入的存檔',
+            origin: ORIGIN,
+            createdAt: b.createdAt || (match && match.createdAt) || Date.now(),
+            data: b.data || {}
+          };
+          last = rec;
+          if (match) { updated++; rec.id = match.id; return putBackup(rec); }
+          added++; return addBackup(rec);
+        });
+      });
+      return chain.then(function () {
+        renderBackups();
+        var total = added + updated;
+        // 只處理一筆：問要不要立刻還原（換電腦 / 兩地同步的主要情境）。
+        if (total === 1 && last) {
+          toast('✓ 已匯入 1 筆備份（' + (added ? '新增' : '覆蓋') + '）');
+          if (confirm('已匯入「' + (last.name || '此備份') + '」。\n要立刻還原（套用到目前網站）嗎？\n目前的存檔會被它取代。\n（系統會自動先幫你備份目前的存檔）\n\n完成後會「重新整理頁面」。')) {
+            performRestore(last);
+            return;
+          }
+          $('.tab[data-tab="backup"]').click();
+          return;
+        }
+        // 多筆：不自動還原，請使用者自行到清單選要還原的那一份。
+        $('.tab[data-tab="backup"]').click();
+        toast('✓ 匯入完成：新增 ' + added + ' 筆、覆蓋 ' + updated + ' 筆，請在清單中選擇要還原的備份');
+      });
+    }).catch(function (err) { toast('匯入失敗：' + (err && err.message || err), true); });
+  }
+
+  /* ---- 從檔案匯入 ---- */
   $('#doImport').addEventListener('click', function () { $('#fileInput').click(); });
   $('#fileInput').addEventListener('change', function (e) {
     // 先抓住 input 元素；reader.onload 是非同步觸發，屆時 e.target 可能已變 null。
@@ -336,39 +398,38 @@
       try { backups = parseBackups(reader.result); }
       catch (err) { toast('匯入失敗：' + err.message, true); input.value = ''; return; }
       input.value = '';
-      if (!backups.length) { toast('檔案裡沒有備份', true); return; }
-      // 以「名稱＋時間」比對，跳過清單裡已存在的備份，避免重複。
-      listBackups().then(function (existing) {
-        var seen = {};
-        existing.forEach(function (b) { seen[b.name + '|' + b.createdAt] = true; });
-        var toAdd = backups.filter(function (b) { return !seen[(b.name || '') + '|' + b.createdAt]; });
-        if (!toAdd.length) { toast('這些備份已經都在清單裡了'); return; }
-        var chain = Promise.resolve();
-        toAdd.forEach(function (b) {
-          chain = chain.then(function () {
-            return addBackup({ name: b.name || '匯入的存檔', origin: ORIGIN, createdAt: b.createdAt || Date.now(), data: b.data || {} });
-          });
-        });
-        chain.then(function () {
-          renderBackups();
-          // 只匯入一筆：問要不要立刻還原（換電腦的主要情境）。
-          if (toAdd.length === 1) {
-            var only = toAdd[0];
-            toast('✓ 已匯入 1 筆備份');
-            if (confirm('已匯入「' + (only.name || '此備份') + '」。\n要立刻還原（套用到目前網站）嗎？\n目前的存檔會被它取代。\n（系統會自動先幫你備份目前的存檔）\n\n完成後會「重新整理頁面」。')) {
-              performRestore(only);
-              return;
-            }
-            $('.tab[data-tab="backup"]').click();
-            return;
-          }
-          // 多筆：不自動還原，請使用者自行到清單選要還原的那一份。
-          $('.tab[data-tab="backup"]').click();
-          toast('✓ 已匯入 ' + toAdd.length + ' 筆備份，請在清單中選擇要還原的備份');
-        }).catch(function (err) { toast('匯入失敗：' + (err && err.message || err), true); });
-      });
+      importBackups(backups);
     };
     reader.readAsText(f);
+  });
+
+  /* ---- 用文字字串搬運：複製 / 貼上匯入 ---- */
+  $('#doCopy').addEventListener('click', function () {
+    listBackups().then(function (rows) {
+      var manual = rows.filter(function (r) { return !r.auto; });
+      if (!manual.length) { toast('還沒有任何備份，請先到「備份」分頁建立', true); return; }
+      var s = toB64(exportBackupsPayload(manual));
+      var ta = $('#ioText');
+      ta.style.display = 'block'; ta.value = s; ta.focus(); ta.select();
+      var ok = function () { toast('✓ 已複製 ' + manual.length + ' 筆備份字串到剪貼簿'); };
+      var manualHint = function () { toast('✓ 已產生字串（已選取，請按 Ctrl+C 手動複製）'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(s).then(ok, manualHint);
+      } else { manualHint(); }
+    });
+  });
+  $('#doPasteImport').addEventListener('click', function () {
+    var ta = $('#ioText');
+    if (ta.style.display === 'none' || !ta.value.trim()) {
+      ta.style.display = 'block'; ta.value = ''; ta.focus();
+      toast('把另一台複製的字串貼到下方框框，再按一次「貼上字串匯入」');
+      return;
+    }
+    var backups;
+    try { backups = parseBackups(fromB64(ta.value)); }
+    catch (err) { toast('字串無法解析，請確認有完整貼上', true); return; }
+    ta.value = ''; ta.style.display = 'none';
+    importBackups(backups);
   });
 
   /* ---- 還原（共用：自動先備份目前存檔，再套用、重新整理） ---- */
@@ -418,7 +479,7 @@
         var data = snapshot();
         if (!dataCount(data)) { toast('目前沒有存檔可以覆蓋', true); return; }
         if (!confirm('要把「目前的存檔」備份到「' + (r.name || '此備份') + '」這一格嗎？\n這份備份原本的內容會被取代，無法復原。')) return;
-        putBackup({ id: r.id, name: r.name, origin: ORIGIN, createdAt: Date.now(), data: data })
+        putBackup({ id: r.id, uid: r.uid || genUid(), name: r.name, origin: ORIGIN, createdAt: Date.now(), data: data })
           .then(function () { renderBackups(); toast('✓ 已備份至此：' + (r.name || '此備份')); })
           .catch(function (e) { toast('備份失敗：' + (e && e.message || e), true); });
       });
