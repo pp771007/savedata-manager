@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.2.0';
+  var VERSION = '1.2.1';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -326,14 +326,16 @@
   /* ---- 匯入（加進備份清單） ---- */
   $('#doImport').addEventListener('click', function () { $('#fileInput').click(); });
   $('#fileInput').addEventListener('change', function (e) {
-    var f = e.target.files[0];
+    // 先抓住 input 元素；reader.onload 是非同步觸發，屆時 e.target 可能已變 null。
+    var input = e.target;
+    var f = input.files[0];
     if (!f) return;
     var reader = new FileReader();
     reader.onload = function () {
       var backups;
       try { backups = parseBackups(reader.result); }
-      catch (err) { toast('匯入失敗：' + err.message, true); e.target.value = ''; return; }
-      e.target.value = '';
+      catch (err) { toast('匯入失敗：' + err.message, true); input.value = ''; return; }
+      input.value = '';
       if (!backups.length) { toast('檔案裡沒有備份', true); return; }
       // 以「名稱＋時間」比對，跳過清單裡已存在的備份，避免重複。
       listBackups().then(function (existing) {
