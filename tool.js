@@ -7,9 +7,14 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.1';
+  var VERSION = '1.2.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
+
+  // 載入本檔的 script 網址（書籤注入時設的 src），用來回推教學首頁的位置。
+  var SCRIPT_URL = (document.currentScript && document.currentScript.src) || '';
+  var HOME_URL = '';
+  try { if (SCRIPT_URL) HOME_URL = new URL('.', SCRIPT_URL).href; } catch (e) {}
 
   try { console.log('%c存檔管理工具 v' + VERSION, 'color:#38bdf8;font-weight:bold'); } catch (e) {}
 
@@ -152,6 +157,9 @@
     '.hd .ttl{font-weight:800;font-size:1.1rem;flex:1;}' +
     '.hd .ver{font-size:.7rem;color:#64748b;font-weight:600;margin-left:6px;}' +
     '.hd .org{font-size:.72rem;color:#94a3b8;font-weight:400;display:block;margin-top:2px;word-break:break-all;}' +
+    '.hd .home{display:inline-flex;align-items:center;justify-content:center;gap:5px;text-decoration:none;' +
+      'background:#273449;border:1px solid #334155;color:#cbd5e1;border-radius:8px;cursor:pointer;height:36px;padding:0 11px;font-size:.82rem;font-weight:700;}' +
+    '.hd .home:hover{background:#334155;color:#fff;}' +
     '.x{background:#273449;border:1px solid #334155;color:#e2e8f0;border-radius:8px;cursor:pointer;width:36px;height:36px;font-size:1.15rem;}' +
     '.x:hover{background:#334155;}' +
     '.tabs{display:flex;background:#1e293b;border-bottom:1px solid #334155;}' +
@@ -203,6 +211,7 @@
     '<div class="panel">' +
       '<div class="hd">' +
         '<div class="ttl">💾 存檔管理<span class="ver"></span><span class="org"></span></div>' +
+        '<a class="home" target="_blank" rel="noopener" title="開啟說明 / 首頁">🏠 首頁</a>' +
         '<button class="x" data-close title="關閉">✕</button>' +
       '</div>' +
       '<div class="tabs">' +
@@ -245,6 +254,11 @@
   var $ = function (s) { return root.querySelector(s); };
   $('.ver').textContent = 'v' + VERSION;
   $('.org').textContent = ORIGIN.replace(/^https?:\/\//, '');
+
+  // 首頁連結：用 script 來源回推；取不到就把按鈕藏起來。
+  var homeLink = $('.home');
+  if (HOME_URL) homeLink.href = HOME_URL;
+  else homeLink.style.display = 'none';
 
   var toastTimer = null;
   function toast(msg, isErr) {
