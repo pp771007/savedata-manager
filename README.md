@@ -11,7 +11,7 @@
 
 [![前往線上頁面](https://img.shields.io/badge/🔗%20前往線上頁面-pp771007.github.io%2Fsavedata--manager-38bdf8?style=for-the-badge)](https://pp771007.github.io/savedata-manager/)
 
-![version](https://img.shields.io/badge/version-1.4.3-22c55e?style=flat-square)
+![version](https://img.shields.io/badge/version-1.5.0-22c55e?style=flat-square)
 ![tech](https://img.shields.io/badge/Vanilla_JS-無框架-f7df1e?style=flat-square)
 ![storage](https://img.shields.io/badge/IndexedDB%20%2B%20localStorage-儲存-0284c7?style=flat-square)
 ![privacy](https://img.shields.io/badge/隱私-不上傳資料-16a34a?style=flat-square)
@@ -78,6 +78,7 @@ python -m http.server 8000
 
 版本號定義在 `tool.js` 最上方的 `VERSION` 常數，會顯示在面板標題、並輸出到瀏覽器 Console（方便回報問題時告知版本）。更新功能時請一併調整，建議採[語意化版本](https://semver.org/lang/zh-TW/)。
 
+- **v1.5.0** — IndexedDB 開不起來時（Firefox 用本機檔 `file://` 開啟、或關閉 cookie 的網站）自動改用 `localStorage` 當備份倉庫，讓備份 / 還原 / 匯出入仍可使用；空間不足時提示處理。
 - **v1.4.3** — 備份取名框支援按 <kbd>Enter</kbd> 直接立即備份。
 - **v1.4.2** — 「貼上字串匯入」固定先開出輸入框，貼上後直接接著匯入（不再嘗試讀剪貼簿、也不必再按一次按鈕）。
 - **v1.4.1** — 「貼上字串匯入」改為貼上後（或讀得到剪貼簿時）自動匯入。

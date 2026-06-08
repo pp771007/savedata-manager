@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.3';
+  var VERSION = '1.5.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -21,26 +21,93 @@
   var DB_NAME = 'SaveDataManager';
   var STORE = 'backups';
   var ORIGIN = location.origin;
+  // 工具在 localStorage 的保留前綴：當 IndexedDB 不可用（Firefox 用 file:// 開啟、或關掉 cookie 的 https 站）時，
+  // 改用 localStorage 當備份倉庫，存在這個前綴底下。snapshot / 還原都要避開它，以免備份到自己或還原時清掉倉庫。
+  var SDM_PREFIX = '__SDM__';
+  var LS_STORE_KEY = SDM_PREFIX + 'backups';
+  var usingLS = false;   // 由 probeStore() 決定：true = 走 localStorage 倉庫
 
   /* ---------- 存檔(localStorage) ---------- */
 
-  function snapshot() {
-    var o = {};
+  function isReservedKey(k) { return usingLS && k.indexOf(SDM_PREFIX) === 0; }
+
+  // 列出「非工具保留」的 localStorage key：要排除工具自己的倉庫，避免備份到自己 / 還原時把倉庫清掉。
+  function gameKeys() {
+    var keys = [];
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      o[k] = localStorage.getItem(k);
+      if (!isReservedKey(k)) keys.push(k);
     }
+    return keys;
+  }
+
+  function snapshot() {
+    var o = {};
+    gameKeys().forEach(function (k) { o[k] = localStorage.getItem(k); });
     return o;
   }
 
+  // 套用一份存檔到 localStorage：只動「非保留」key（保住工具倉庫）。
+  // localStorage 倉庫模式下寫入可能撞配額，中途失敗會回滾到動手前的狀態，再把錯誤往上丟給呼叫端報訊息。
   function applyData(data) {
-    localStorage.clear();
-    Object.keys(data).forEach(function (k) { localStorage.setItem(k, data[k]); });
+    var prevKeys = gameKeys();
+    var prev = {};
+    prevKeys.forEach(function (k) { prev[k] = localStorage.getItem(k); });
+
+    prevKeys.forEach(function (k) { localStorage.removeItem(k); });
+    try {
+      Object.keys(data).forEach(function (k) {
+        if (isReservedKey(k)) return;   // 防禦：別讓匯入資料污染工具倉庫
+        localStorage.setItem(k, data[k]);
+      });
+    } catch (e) {
+      // 回滾：清掉剛寫進去的，把原本的非保留 key 寫回（原本就塞得下，必定成功）。
+      gameKeys().forEach(function (k) { localStorage.removeItem(k); });
+      Object.keys(prev).forEach(function (k) { localStorage.setItem(k, prev[k]); });
+      throw e;
+    }
   }
 
   function dataCount(data) { return Object.keys(data).length; }
 
-  /* ---------- 備份儲存(IndexedDB) ---------- */
+  /* ---------- 備份儲存：IndexedDB，開不起來時退到 localStorage ---------- */
+
+  // 啟動時探測 IndexedDB 能不能用。Firefox 在 file:// 會直接丟 SecurityError，
+  // 一般 https 站但使用者關掉 cookie 也會。開不起來就改用 localStorage 當倉庫。
+  function probeStore() {
+    return new Promise(function (res) {
+      if (!window.indexedDB) { usingLS = true; res(); return; }
+      var req;
+      try { req = indexedDB.open(DB_NAME, 1); }
+      catch (e) { usingLS = true; res(); return; }
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE)) {
+          var st = db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+          st.createIndex('origin', 'origin', { unique: false });
+        }
+      };
+      req.onsuccess = function () { usingLS = false; try { req.result.close(); } catch (e) {} res(); };
+      req.onerror = function () { usingLS = true; res(); };
+      req.onblocked = function () { usingLS = true; res(); };
+    });
+  }
+
+  /* ---- localStorage 倉庫（IndexedDB 不可用時的後援）---- */
+  // 全部備份存在單一一個 key（一坨 JSON），所以寫入是原子的：撞配額丟錯時，原本那坨原封不動。
+  function lsReadAll() {
+    try {
+      var raw = localStorage.getItem(LS_STORE_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function lsWriteAll(arr) { localStorage.setItem(LS_STORE_KEY, JSON.stringify(arr)); }
+  function lsNextId(arr) {
+    var max = 0;
+    arr.forEach(function (r) { if (typeof r.id === 'number' && r.id > max) max = r.id; });
+    return max + 1;
+  }
 
   function openDB() {
     return new Promise(function (res, rej) {
@@ -58,6 +125,14 @@
   }
 
   function addBackup(rec) {
+    if (usingLS) {
+      return new Promise(function (res, rej) {
+        var arr = lsReadAll();
+        rec.id = lsNextId(arr);
+        arr.push(rec);
+        try { lsWriteAll(arr); res(rec.id); } catch (e) { rej(e); }
+      });
+    }
     return openDB().then(function (db) {
       return new Promise(function (res, rej) {
         var r = db.transaction(STORE, 'readwrite').objectStore(STORE).add(rec);
@@ -69,6 +144,14 @@
 
   // 以原本的 id 覆蓋整筆備份（用來把某一份更新成目前的存檔）。
   function putBackup(rec) {
+    if (usingLS) {
+      return new Promise(function (res, rej) {
+        var arr = lsReadAll(), idx = -1;
+        for (var i = 0; i < arr.length; i++) { if (arr[i].id === rec.id) { idx = i; break; } }
+        if (idx >= 0) arr[idx] = rec; else arr.push(rec);
+        try { lsWriteAll(arr); res(rec.id); } catch (e) { rej(e); }
+      });
+    }
     return openDB().then(function (db) {
       return new Promise(function (res, rej) {
         var r = db.transaction(STORE, 'readwrite').objectStore(STORE).put(rec);
@@ -79,6 +162,13 @@
   }
 
   function listBackups() {
+    if (usingLS) {
+      return Promise.resolve(
+        lsReadAll()
+          .filter(function (r) { return r.origin === ORIGIN; })
+          .sort(function (a, b) { return b.createdAt - a.createdAt; })
+      );
+    }
     return openDB().then(function (db) {
       return new Promise(function (res, rej) {
         var req = db.transaction(STORE, 'readonly').objectStore(STORE).index('origin').getAll(ORIGIN);
@@ -91,6 +181,12 @@
   }
 
   function deleteBackup(id) {
+    if (usingLS) {
+      return new Promise(function (res, rej) {
+        var arr = lsReadAll().filter(function (r) { return r.id !== id; });
+        try { lsWriteAll(arr); res(); } catch (e) { rej(e); }
+      });
+    }
     return openDB().then(function (db) {
       return new Promise(function (res, rej) {
         var r = db.transaction(STORE, 'readwrite').objectStore(STORE).delete(id);
@@ -290,6 +386,26 @@
     setTimeout(function () { location.reload(); }, 700);
   }
 
+  /* ---- 儲存錯誤共用處理 ---- */
+  function isQuotaError(e) {
+    if (!e) return false;
+    return e.name === 'QuotaExceededError'
+        || e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+        || e.code === 22 || e.code === 1014;
+  }
+  // 撞配額時依「還有沒有已存的備份」分流：有就刪了能騰空間，沒有就是這份存檔本身太大、刪也沒用。
+  function quotaToast() {
+    listBackups().then(function (rows) {
+      toast(rows.length
+        ? '儲存空間不足，請刪除部分備份後再試'
+        : '這份存檔太大，無法在本機備份', true);
+    }).catch(function () { toast('儲存空間不足，無法備份', true); });
+  }
+  function handleStoreError(e, ctxMsg) {
+    if (isQuotaError(e)) quotaToast();
+    else toast((ctxMsg || '操作失敗') + '：' + (e && e.message || e), true);
+  }
+
   root.querySelectorAll('[data-close]').forEach(function (el) { el.addEventListener('click', close); });
 
   /* ---- 分頁切換 ---- */
@@ -309,7 +425,7 @@
     var name = $('#bkName').value.trim() || ('備份 ' + fmtTime(Date.now()));
     addBackup({ uid: genUid(), name: name, origin: ORIGIN, createdAt: Date.now(), data: data })
       .then(function () { $('#bkName').value = ''; renderBackups(); toast('✓ 已備份：' + name); })
-      .catch(function (e) { toast('備份失敗：' + (e && e.message || e), true); });
+      .catch(function (e) { handleStoreError(e, '備份失敗'); });
   });
   // 在取名框按 Enter＝按「立即備份」。
   $('#bkName').addEventListener('keydown', function (e) {
@@ -386,7 +502,7 @@
         $('.tab[data-tab="backup"]').click();
         toast('✓ 匯入完成：新增 ' + added + ' 筆、覆蓋 ' + updated + ' 筆，請在清單中選擇要還原的備份');
       });
-    }).catch(function (err) { toast('匯入失敗：' + (err && err.message || err), true); });
+    }).catch(function (err) { handleStoreError(err, '匯入失敗'); });
   }
 
   /* ---- 從檔案匯入 ---- */
@@ -445,8 +561,18 @@
   /* ---- 還原（共用：自動先備份目前存檔，再套用、重新整理） ---- */
   function performRestore(rec, doneMsg) {
     return autoBackup().then(function () {
-      applyData(rec.data || {});
+      try {
+        applyData(rec.data || {});
+      } catch (e) {
+        // 還原寫入撞配額：applyData 已回滾到動手前，這裡只報訊息。
+        handleStoreError(e, '還原失敗');
+        return;
+      }
       finishAndReload(doneMsg || '✓ 已還原，正在重新整理…');
+    }, function (e) {
+      // 還原前的自動備份失敗（多半是配額）→ 中止還原，不在沒有安全網的情況下覆蓋現有存檔。
+      if (isQuotaError(e)) toast('空間不足，無法先備份目前存檔，請刪除部分備份後再試', true);
+      else toast('還原前自動備份失敗，已中止還原：' + (e && e.message || e), true);
     });
   }
 
@@ -491,7 +617,7 @@
         if (!confirm('要把「目前的存檔」備份到「' + (r.name || '此備份') + '」這一格嗎？\n這份備份原本的內容會被取代，無法復原。')) return;
         putBackup({ id: r.id, uid: r.uid || genUid(), name: r.name, origin: ORIGIN, createdAt: Date.now(), data: data })
           .then(function () { renderBackups(); toast('✓ 已備份至此：' + (r.name || '此備份')); })
-          .catch(function (e) { toast('備份失敗：' + (e && e.message || e), true); });
+          .catch(function (e) { handleStoreError(e, '備份失敗'); });
       });
       card.appendChild(overwrite);
     }
@@ -537,5 +663,6 @@
 
   window.__SDM__ = { open: open, close: close };
 
-  renderBackups();
+  // 先探測 IndexedDB 能不能用（決定 usingLS），再讀清單。
+  probeStore().then(renderBackups);
 })();
