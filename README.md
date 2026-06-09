@@ -4,23 +4,37 @@
 
 # 💾 存檔管理小工具
 
-**書籤式存檔管理工具** — 在任何網站備份 / 還原 `localStorage`，並可跨裝置匯出匯入。<br>
+**書籤式存檔工具** — 在任何網站備份 / 搬移 `localStorage`，可跨裝置匯出匯入。<br>
+提供**備份版**（多份快照、隨時還原）與**精簡版**（整包匯出 / 直接覆蓋）兩種書籤。<br>
 純前端執行，**不上傳任何資料、無後端**。
 
 <br>
 
 [![前往線上頁面](https://img.shields.io/badge/🔗%20前往線上頁面-pp771007.github.io%2Fsavedata--manager-38bdf8?style=for-the-badge)](https://pp771007.github.io/savedata-manager/)
 
-![version](https://img.shields.io/badge/version-1.5.0-22c55e?style=flat-square)
+![備份版](https://img.shields.io/badge/備份版-v1.5.0-22c55e?style=flat-square)
+![精簡版](https://img.shields.io/badge/精簡版-v1.0.0-0284c7?style=flat-square)
 ![tech](https://img.shields.io/badge/Vanilla_JS-無框架-f7df1e?style=flat-square)
-![storage](https://img.shields.io/badge/IndexedDB%20%2B%20localStorage-儲存-0284c7?style=flat-square)
 ![privacy](https://img.shields.io/badge/隱私-不上傳資料-16a34a?style=flat-square)
 
 </div>
 
 ---
 
-## ✨ 功能
+## 🧩 兩種版本（各自一個書籤）
+
+兩支書籤獨立、互不影響，依需求挑一個（或都裝）：
+
+| 版本 | 線上頁面 | 適合 | 書籤 / 程式 |
+|------|----------|------|-------------|
+| 💾 **備份版** | [`/`](https://pp771007.github.io/savedata-manager/) | 想在本機**存好幾份**存檔、隨時挑一份還原，操作前還要自動保護 | `index.html` + `tool.js` |
+| 📦 **精簡版** | [`/lite.html`](https://pp771007.github.io/savedata-manager/lite.html) | 只想**整包匯出**、到另一台**直接覆蓋**還原，不需要管理多份備份 | `lite.html` + `tool-lite.js` |
+
+> 兩頁互有切換連結，匯出格式各自獨立（備份版 `savedata-manager-backups`、精簡版 `savedata-lite-dump`），不會互相誤匯入。
+
+---
+
+## ✨ 備份版功能
 
 工具面板分成兩個分頁：
 
@@ -35,6 +49,17 @@
 
 工具不顯示原始資料內容，介面對非技術使用者友善。
 
+## 📦 精簡版功能
+
+只做兩件事，介面就一個面板（無分頁）：
+
+| 區塊 | 功能 |
+|------|------|
+| 📤 **匯出** | 把目前網站的**整包** `localStorage` 帶走，兩種任選：**① 匯出成檔案**（JSON）；**② 複製成 base64 文字字串**（貼到雲端筆記 / 通訊軟體搬運）。 |
+| 📥 **匯入** | 從**檔案**或**貼上文字**，把帶進來的存檔**整包覆蓋**目前網站的存檔，完成後**自動重新整理頁面**；貼上字串會自動接著匯入。 |
+
+> ⚠️ 精簡版**不保留任何備份**，匯入是「直接覆蓋」（原存檔被取代、無法復原），覆蓋前會跳出確認。需要多份備份 / 隨時還原 / 操作前自動保護，請改用備份版。覆蓋寫入若撞瀏覽器容量上限會自動**回滾**，不會把存檔清掉一半。
+
 ## 🚀 立即使用
 
 👉 **開啟 [線上頁面](https://pp771007.github.io/savedata-manager/)，把書籤拖到瀏覽器書籤列即可。**
@@ -45,11 +70,13 @@
 
 | 檔案 | 說明 |
 |------|------|
-| `index.html` | GitHub Pages 首頁：安裝書籤（拖曳 / 複製）＋ 新手教學 |
-| `tool.js` | 真正的管理工具，由書籤動態載入並注入目標網頁 |
+| `index.html` | 備份版 GitHub Pages 首頁：安裝書籤（拖曳 / 複製）＋ 新手教學 |
+| `tool.js` | 備份版管理工具，由書籤動態載入並注入目標網頁 |
+| `lite.html` | 精簡版安裝教學頁 |
+| `tool-lite.js` | 精簡版工具（整包匯出 / 直接覆蓋匯入） |
 | `README.md` | 本說明 |
 
-書籤採「載入器（loader）」模式：書籤本身只是一小段程式碼，點擊時即時從本站抓取最新的 `tool.js`，所以**工具更新後不需要重裝書籤**。`index.html` 會依目前網址自動產生指向正確 `tool.js` 的書籤，部署到任何網域都不用改網址。
+兩支書籤都採「載入器（loader）」模式：書籤本身只是一小段程式碼，點擊時即時從本站抓取最新的 `tool.js` / `tool-lite.js`，所以**工具更新後不需要重裝書籤**。安裝頁會依目前網址自動產生指向正確程式的書籤，部署到任何網域都不用改網址。
 
 ## 🛠️ 本機測試
 
@@ -76,7 +103,13 @@ python -m http.server 8000
 
 ## 🏷️ 版本
 
-版本號定義在 `tool.js` 最上方的 `VERSION` 常數，會顯示在面板標題、並輸出到瀏覽器 Console（方便回報問題時告知版本）。更新功能時請一併調整，建議採[語意化版本](https://semver.org/lang/zh-TW/)。
+兩支工具**各自獨立記版號**（顯示在各自面板標題、並輸出到瀏覽器 Console，方便回報問題時告知是哪支、哪版）：備份版的 `VERSION` 在 `tool.js` 最上方，精簡版在 `tool-lite.js` 最上方。改哪支就只動那支的版號，建議採[語意化版本](https://semver.org/lang/zh-TW/)。
+
+### 📦 精簡版（`tool-lite.js`）
+
+- **v1.0.0** — 首個版本：整包匯出（檔案 / base64 文字字串）、直接覆蓋匯入並自動重新整理、覆蓋寫入撞配額自動回滾。
+
+### 💾 備份版（`tool.js`）
 
 - **v1.5.0** — IndexedDB 開不起來時（Firefox 用本機檔 `file://` 開啟、或關閉 cookie 的網站）自動改用 `localStorage` 當備份倉庫，讓備份 / 還原 / 匯出入仍可使用；空間不足時提示處理。
 - **v1.4.3** — 備份取名框支援按 <kbd>Enter</kbd> 直接立即備份。

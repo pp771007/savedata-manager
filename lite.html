@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>存檔管理小工具 · 安裝教學</title>
+<title>存檔快速搬移 · 安裝教學</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<meta name="description" content="書籤式存檔管理小工具：在任何網站備份/還原 localStorage，並可跨裝置匯出匯入。純前端、不上傳資料。">
+<meta name="description" content="書籤式存檔快速搬移：把任何網站的 localStorage 整包匯出成檔案 / 文字，再直接覆蓋匯入。純前端、不上傳資料。">
 <style>
   :root {
     --bg: #0f172a;
@@ -145,6 +145,7 @@
   .faq dt:first-child { margin-top: 4px; }
   .faq dd { margin: 4px 0 0; color: var(--muted); font-size: .92rem; }
   .tip { font-size: .9rem; color: var(--muted); background: #0b1120; border-radius: 10px; padding: 12px 14px; margin: 16px 0 0; border-left: 3px solid var(--accent2); }
+  .warnbox { font-size: .92rem; color: #fcd34d; background: #2a2410; border: 1px solid #3f3a1a; border-radius: 10px; padding: 13px 16px; margin: 16px 0 0; }
   footer { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 30px; }
   .toast {
     position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px);
@@ -173,9 +174,9 @@
 </a>
 <div class="wrap">
   <header>
-    <h1><span class="emoji">💾</span> 存檔管理小工具</h1>
-    <p class="subtitle">幫你把網站存檔備份、搬到別台電腦的小幫手。<br>不用懂程式，照著下面三步做就好。</p>
-    <a class="switch" href="lite.html">📦 只想單純「整包匯出 / 覆蓋匯入」？用精簡版 →</a>
+    <h1><span class="emoji">📦</span> 存檔快速搬移</h1>
+    <p class="subtitle">一鍵把網站存檔整包匯出、再直接覆蓋匯入的小幫手。<br>不用懂程式，照著下面三步做就好。</p>
+    <a class="switch" href="index.html">💾 想要「多份備份／還原」版本？點這裡 →</a>
   </header>
 
   <!-- 步驟一：安裝 -->
@@ -199,7 +200,7 @@
     <div class="drag-zone">
       <div class="arrow-up">⬆️</div>
       <div class="bm-center">
-        <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，拖到上面那排！">💾 存檔管理小工具</a>
+        <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，拖到上面那排！">📦 存檔快速搬移</a>
         <span class="grab-hint">👆 按住這顆，拖到上方書籤列放開</span>
       </div>
     </div>
@@ -211,7 +212,7 @@
         <ol style="font-size:.92rem;padding-left:20px;margin:0">
           <li>先按一下下面的綠色按鈕，把程式碼複製起來。</li>
           <li>在書籤列上<strong>按右鍵 → 新增書籤 / 加入網頁</strong>。</li>
-          <li>名稱隨便打（例如「存檔管理」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
+          <li>名稱隨便打（例如「存檔搬移」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
         </ol>
         <p style="margin:14px 0 0"><button class="btn" id="copyBtn">📋 複製程式碼</button></p>
         <pre id="codeBox">載入中…</pre>
@@ -225,10 +226,10 @@
     <h2><span class="badge">2</span> 怎麼用</h2>
     <p class="lead">裝好之後，以後在任何網站都能用它。</p>
     <ol class="steps">
-      <li>打開你想備份存檔的網站（例如某個網頁遊戲、線上工具）。</li>
-      <li>點一下書籤列上的 <strong>💾 存檔管理小工具</strong>。</li>
-      <li>畫面右邊會滑出一個小視窗，分成<strong>「💾 備份」</strong>和<strong>「🔄 匯出 / 匯入」</strong>兩個分頁。</li>
-      <li>在裡面備份、還原，或匯出帶去別台電腦。看完按右上角 ✕ 就收起來。</li>
+      <li>打開你想搬存檔的網站（例如某個網頁遊戲、線上工具）。</li>
+      <li>點一下書籤列上的 <strong>📦 存檔快速搬移</strong>。</li>
+      <li>畫面右邊會滑出一個小視窗，上半是<strong>「匯出」</strong>、下半是<strong>「匯入」</strong>。</li>
+      <li>要帶走就按匯出（檔案或文字）；要還回去就在另一台按匯入。看完按右上角 ✕ 就收起來。</li>
     </ol>
     <p class="tip">💡 想先試試看？現在就可以在<strong>這個網頁</strong>上點剛裝好的書籤，右邊就會跳出視窗。</p>
   </div>
@@ -237,14 +238,12 @@
   <div class="card">
     <h2><span class="badge">3</span> 它能做什麼</h2>
     <ul class="feat">
-      <li><b>備份</b>：把目前的存檔存起來，可以存好幾份（像不同的存檔格），每份都能取名字。</li>
-      <li><b>還原</b>：從備份清單一鍵把某一份存檔復原（復原後頁面會自動重新整理，存檔才會生效）。</li>
-      <li><b>備份至此</b>：把目前的存檔備份到某一份既有備份上（取代原內容），不會一直新增、清單不會越來越長（像覆蓋同一個存檔格）。</li>
-      <li><b>匯出 / 匯入（檔案）</b>：把你的<strong>所有備份打包成一個檔案</strong>下載，帶到另一台電腦讀進來。</li>
-      <li><b>複製 / 貼上（文字字串）</b>：不想存檔案的話，可以把所有備份<strong>複製成一段文字</strong>，貼到雲端筆記或通訊軟體帶走；另一台按「貼上字串匯入」<strong>貼上後就會自動匯入</strong>。</li>
-      <li><b>聰明覆蓋</b>：匯入時若是<strong>同一份</strong>備份會直接覆蓋（可以拿舊版蓋回現在的存檔），是新的才會新增，兩台電腦來回搬也不會越堆越多。</li>
-      <li><b>自動保護</b>：還原或匯入前，會自動先幫你備份目前的存檔，萬一按錯也救得回來。</li>
+      <li><b>整包匯出（檔案）</b>：把目前網站的<strong>所有存檔打包成一個檔案</strong>下載，帶到另一台電腦。</li>
+      <li><b>整包匯出（文字）</b>：不想存檔案的話，把存檔<strong>複製成一段文字</strong>，貼到雲端筆記或通訊軟體帶走。</li>
+      <li><b>直接覆蓋匯入</b>：從檔案或貼上文字，把帶進來的存檔<strong>整包覆蓋</strong>目前網站的存檔；<strong>貼上文字後會自動匯入</strong>。</li>
+      <li><b>自動重新整理</b>：覆蓋完成後會自動重新整理頁面，網站才會讀到新存檔。</li>
     </ul>
+    <p class="warnbox">⚠️ 這個精簡版<strong>不會幫你保留備份</strong>：匯入是「直接覆蓋」，原本的存檔會被取代且無法復原。需要「存好幾份、隨時還原、操作前自動保護」的話，請改用 <a href="index.html" style="color:var(--accent);font-weight:700">💾 存檔管理（備份版）</a>。</p>
   </div>
 
   <!-- 常見問題 -->
@@ -254,20 +253,17 @@
       <dt>會不會把我的資料偷傳走？</dt>
       <dd>不會。整個工具只在你自己的瀏覽器裡跑，<strong>沒有任何資料會被上傳</strong>，也沒有伺服器。</dd>
 
-      <dt>怎麼換到另一台電腦用同一份存檔？</dt>
-      <dd>到「🔄 匯出 / 匯入」分頁，有兩種方式任選：<br>
-        <strong>① 用檔案：</strong>按「匯出成檔案」下載 → 把檔案傳到新電腦（雲端、隨身碟、傳給自己都行）→ 在新電腦打開同一個網站、點書籤，按「從檔案匯入」選那個檔案。<br>
-        <strong>② 用文字（免存檔）：</strong>按「複製備份字串」→ 把那段文字貼到雲端筆記 / 通訊軟體 → 在新電腦按「貼上字串匯入」，<strong>貼上後就會自動匯入</strong>。<br>
-        匯入後若只有一份，會直接問你要不要立刻還原；多份的話再到「💾 備份」分頁按你要那份的「還原」即可。</dd>
+      <dt>這個跟「💾 存檔管理（備份版）」差在哪？</dt>
+      <dd>備份版可以存好幾份存檔、隨時挑一份還原、操作前還會自動先備份保護。這個<strong>精簡版只做「整包匯出 / 直接覆蓋匯入」兩件事</strong>，不留任何備份，適合只想單純把存檔搬到另一台、不需要管理多份的人。</dd>
 
-      <dt>同一份存檔兩台電腦來回搬，備份會越堆越多嗎？</dt>
-      <dd>不會。每份備份都有專屬的識別碼，匯入時只要是<strong>同一份</strong>就直接覆蓋（也可以拿舊版蓋回現在的存檔），是新的才會新增，所以兩邊來回同步清單也保持乾淨。</dd>
+      <dt>怎麼換到另一台電腦用同一份存檔？</dt>
+      <dd>在這台按「匯出成檔案」下載（或「複製成文字字串」）→ 把檔案 / 文字帶到新電腦 → 在新電腦打開<strong>同一個網站</strong>、點書籤，按「從檔案匯入」選那個檔案（或「貼上字串匯入」貼上文字）→ 確認覆蓋，頁面重新整理後就生效。</dd>
+
+      <dt>匯入會把我原本的存檔蓋掉嗎？</dt>
+      <dd>會。匯入是<strong>直接整包覆蓋</strong>，原本的存檔會被取代且無法復原，按之前會先跳出提醒。怕蓋錯的話請改用備份版。</dd>
 
       <dt>點了書籤都沒反應？</dt>
       <dd>少數網站有比較嚴格的安全限制，會擋住這類小工具，這種情況會跳出提示。換個網站、或在這個教學頁上試就正常。</dd>
-
-      <dt>備份會不會不見？</dt>
-      <dd>備份存在你這台電腦的瀏覽器裡。如果你清掉瀏覽器資料就會一起被清掉，所以重要存檔記得偶爾用「匯出所有備份」存一份檔案備著。</dd>
     </dl>
   </div>
 
@@ -280,10 +276,10 @@
 
 <script>
   // 依目前頁面網址，自動算出工具程式的完整網址，部署到任何網域都能正確指向。
-  var toolUrl = new URL('tool.js', location.href).href;
+  var toolUrl = new URL('tool-lite.js', location.href).href;
 
   // 書籤程式碼：已裝過就直接開窗，否則去本站載入工具。
-  var code = "javascript:(function(){if(window.__SDM__){window.__SDM__.open();return;}" +
+  var code = "javascript:(function(){if(window.__SDL__){window.__SDL__.open();return;}" +
              "var s=document.createElement('script');" +
              "s.src='" + toolUrl + "?t='+Date.now();" +
              "s.onerror=function(){alert('這個網站擋住了小工具，沒辦法在這裡使用，換個網站試試。');};" +
