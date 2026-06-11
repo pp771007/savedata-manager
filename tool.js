@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.5.0';
+  var VERSION = '1.6.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -234,6 +234,12 @@
       })
     }, null, 2);
   }
+  // 把存檔內容做成可比對的指紋（key 排序後 stringify），用來判斷「目前存檔」是否已存在於某筆備份。
+  function dataFingerprint(data) {
+    var o = {};
+    Object.keys(data).sort().forEach(function (k) { o[k] = data[k]; });
+    return JSON.stringify(o);
+  }
   // 解析匯入檔，回傳備份陣列。
   function parseBackups(text) {
     var obj = JSON.parse(text);
@@ -274,6 +280,8 @@
     '.sec.on{display:block;}' +
     '.grp-title{font-size:.8rem;color:#64748b;font-weight:700;letter-spacing:.04em;margin:0 0 10px;text-transform:uppercase;}' +
     '.hint{font-size:.82rem;color:#94a3b8;line-height:1.7;margin:0 0 16px;background:#1e293b;border-radius:10px;padding:12px 14px;}' +
+    '.iostat{font-size:.8rem;color:#cbd5e1;line-height:1.7;margin:0 0 16px;background:#13203a;border:1px solid #1e3a5f;border-radius:10px;padding:10px 14px;}' +
+    '.iostat .warn{color:#fcd34d;font-weight:700;}' +
     '.big{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:none;border-radius:12px;padding:15px 16px;' +
       'font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px;color:#fff;transition:filter .12s;}' +
     '.big:hover{filter:brightness(1.1);}' +
@@ -344,7 +352,8 @@
         '</div>' +
 
         '<div class="sec" data-sec="io">' +
-          '<div class="hint">把這台電腦的<b>所有備份</b>帶到另一台電腦。匯入時若是<b>同一份</b>備份會直接<b>覆蓋</b>（可拿舊版蓋回現況），新的才會新增。要套用某一份，再到「💾 備份」分頁按「還原」。</div>' +
+          '<div class="hint">匯出的是<b>備份清單</b>（這台電腦存的所有手動備份），不是網頁當下的存檔。匯入時若是<b>同一份</b>備份會直接<b>覆蓋</b>（可拿舊版蓋回現況），新的才會新增。要套用某一份，再到「💾 備份」分頁按「還原」。</div>' +
+          '<div class="iostat" id="ioStat"></div>' +
           '<div class="grp-title">用檔案搬</div>' +
           '<button class="big blue" id="doExport"><span class="ic">📤</span><span>匯出成檔案<span class="sub">下載成一個檔案，帶到別台電腦</span></span></button>' +
           '<button class="big slate" id="doImport"><span class="ic">📥</span><span>從檔案匯入<span class="sub">讀取備份檔，加進 / 覆蓋備份清單</span></span></button>' +
@@ -447,14 +456,48 @@
   });
 
   /* ---- 匯出（只帶手動備份，不含自動備份） ---- */
-  $('#doExport').addEventListener('click', function () {
-    listBackups().then(function (rows) {
+  // 「目前存檔」不在任何一筆手動備份裡 → 直接匯出會漏掉還沒備份的進度。
+  function hasUnbackedChanges(manual) {
+    var data = snapshot();
+    if (!dataCount(data)) return false;
+    var fp = dataFingerprint(data);
+    return !manual.some(function (b) { return dataFingerprint(b.data || {}) === fp; });
+  }
+  // 把目前存檔補成一筆手動備份，回傳更新後的手動備份清單。
+  function backupCurrentThenList() {
+    return addBackup({ uid: genUid(), name: '備份 ' + fmtTime(Date.now()), origin: ORIGIN, createdAt: Date.now(), data: snapshot() })
+      .then(function () {
+        renderBackups();
+        return listBackups();
+      })
+      .then(function (rows) { return rows.filter(function (r) { return !r.auto; }); });
+  }
+  // 匯出前置檢查：使用者常以為匯出的是「網頁當下的存檔」，其實是備份清單。
+  // 偵測到目前存檔還沒備份時先問要不要補一筆，避免帶走的檔案漏掉最新進度。
+  // 回傳要匯出的手動備份陣列；回傳 null 表示中止匯出。
+  function prepareExport() {
+    return listBackups().then(function (rows) {
       var manual = rows.filter(function (r) { return !r.auto; });
-      if (!manual.length) { toast('還沒有任何備份，請先到「備份」分頁建立', true); return; }
+      if (!manual.length) {
+        if (!dataCount(snapshot())) { toast('目前沒有存檔、也沒有備份可以匯出', true); return null; }
+        if (!confirm('還沒有任何備份。\n要先把「目前的存檔」備份起來再匯出嗎？')) return null;
+        return backupCurrentThenList();
+      }
+      if (hasUnbackedChanges(manual)) {
+        if (confirm('注意：匯出的是「備份清單」，你目前的存檔還沒有備份，直接匯出不會包含它。\n\n要先把目前的存檔備份一份、一起匯出嗎？\n（按「取消」＝只匯出既有的 ' + manual.length + ' 筆備份）')) {
+          return backupCurrentThenList();
+        }
+      }
+      return manual;
+    });
+  }
+  $('#doExport').addEventListener('click', function () {
+    prepareExport().then(function (manual) {
+      if (!manual) return;
       var name = ORIGIN.replace(/^https?:\/\//, '').replace(/[^\w.-]/g, '_');
       download('存檔備份_' + name + '_' + fmtTime(Date.now()).replace(/[\/: ]/g, '') + '.json', exportBackupsPayload(manual));
       toast('✓ 已下載 ' + manual.length + ' 筆備份');
-    });
+    }).catch(function (e) { handleStoreError(e, '匯出失敗'); });
   });
 
   /* ---- 匯入（共用：以 uid 比對，命中即覆蓋，沒有才新增） ---- */
@@ -525,9 +568,8 @@
 
   /* ---- 用文字字串搬運：複製 / 貼上匯入 ---- */
   $('#doCopy').addEventListener('click', function () {
-    listBackups().then(function (rows) {
-      var manual = rows.filter(function (r) { return !r.auto; });
-      if (!manual.length) { toast('還沒有任何備份，請先到「備份」分頁建立', true); return; }
+    prepareExport().then(function (manual) {
+      if (!manual) return;
       var s = toB64(exportBackupsPayload(manual));
       var ta = $('#ioText');
       ta.style.display = 'block'; ta.value = s; ta.focus(); ta.select();
@@ -536,7 +578,7 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(s).then(ok, manualHint);
       } else { manualHint(); }
-    });
+    }).catch(function (e) { handleStoreError(e, '匯出失敗'); });
   });
   // 解析一段 base64 字串並匯入。
   function importFromText(text) {
@@ -575,6 +617,29 @@
       else toast('還原前自動備份失敗，已中止還原：' + (e && e.message || e), true);
     });
   }
+
+  /* ---- 匯出 / 匯入分頁的備份狀態列 ---- */
+  function renderIoStat() {
+    var el = $('#ioStat');
+    listBackups().then(function (rows) {
+      var manual = rows.filter(function (r) { return !r.auto; });
+      el.textContent = '';
+      if (!manual.length) {
+        el.textContent = '還沒有任何備份。按「匯出」時可以先把目前的存檔備份起來一起帶走。';
+        return;
+      }
+      var line = document.createElement('div');
+      line.textContent = '📦 共 ' + manual.length + ' 筆備份，最新：' + fmtTime(manual[0].createdAt) + '『' + (manual[0].name || '(未命名)') + '』';
+      el.appendChild(line);
+      if (hasUnbackedChanges(manual)) {
+        var warn = document.createElement('div');
+        warn.className = 'warn';
+        warn.textContent = '⚠️ 目前的存檔還沒備份，直接匯出不會包含它';
+        el.appendChild(warn);
+      }
+    }).catch(function () { el.textContent = ''; });
+  }
+  root.querySelector('.tab[data-tab="io"]').addEventListener('click', renderIoStat);
 
   /* ---- 備份清單 ---- */
   function makeCard(r) {
@@ -648,6 +713,7 @@
       } else {
         wrap.style.display = 'none';
       }
+      renderIoStat();
     }).catch(function (e) {
       list.innerHTML = '<div class="empty">讀取失敗：' + (e && e.message || e) + '</div>';
     });
