@@ -1,5 +1,5 @@
 /*
- * 存檔快速搬移（SaveData Lite）— 精簡版
+ * 存檔搬家（SaveData Lite）— 精簡版
  * 由書籤注入目標網頁，把目前網站的存檔(localStorage)「整包匯出」成檔案 / 文字字串，
  * 或把匯出的檔案 / 字串「直接覆蓋」回來（覆蓋後自動重新整理）。
  * 不存任何備份、不用 IndexedDB；只做匯出與匯入兩件事。
@@ -8,16 +8,17 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
 
   if (window.__SDL__) { window.__SDL__.open(); return; }
 
-  // 載入本檔的 script 網址（書籤注入時設的 src），用來回推教學首頁的位置。
+  // 載入本檔的 script 網址（書籤注入時設的 src），用來回推說明頁的位置。
+  // 精簡版的說明頁是 lite.html（不是網站根目錄的 index.html，那是備份版的）。
   var SCRIPT_URL = (document.currentScript && document.currentScript.src) || '';
   var HOME_URL = '';
-  try { if (SCRIPT_URL) HOME_URL = new URL('.', SCRIPT_URL).href; } catch (e) {}
+  try { if (SCRIPT_URL) HOME_URL = new URL('lite.html', SCRIPT_URL).href; } catch (e) {}
 
-  try { console.log('%c存檔快速搬移 v' + VERSION, 'color:#38bdf8;font-weight:bold'); } catch (e) {}
+  try { console.log('%c存檔搬家 v' + VERSION, 'color:#38bdf8;font-weight:bold'); } catch (e) {}
 
   var ORIGIN = location.origin;
   var DUMP_TYPE = 'savedata-lite-dump';
@@ -113,18 +114,16 @@
     '.x{background:#273449;border:1px solid #334155;color:#e2e8f0;border-radius:8px;cursor:pointer;width:36px;height:36px;font-size:1.15rem;}' +
     '.x:hover{background:#334155;}' +
     '.body{flex:1;overflow-y:auto;padding:18px;}' +
-    '.grp-title{font-size:.8rem;color:#64748b;font-weight:700;letter-spacing:.04em;margin:0 0 10px;text-transform:uppercase;}' +
-    '.hint{font-size:.82rem;color:#94a3b8;line-height:1.7;margin:0 0 16px;background:#1e293b;border-radius:10px;padding:12px 14px;}' +
+    '.seclabel{font-size:1.02rem;font-weight:800;color:#e2e8f0;margin:0 0 12px;display:flex;align-items:center;gap:8px;}' +
+    '.hint{font-size:.82rem;color:#94a3b8;line-height:1.7;margin:0 0 12px;background:#1e293b;border-radius:10px;padding:10px 14px;}' +
     '.hint.warn{color:#fcd34d;background:#2a2410;border:1px solid #3f3a1a;}' +
-    '.big{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:none;border-radius:12px;padding:15px 16px;' +
-      'font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:10px;color:#fff;transition:filter .12s;}' +
-    '.big:hover{filter:brightness(1.1);}' +
-    '.big .ic{font-size:1.5rem;line-height:1;}' +
-    '.big .sub{display:block;font-size:.76rem;font-weight:400;opacity:.85;margin-top:2px;}' +
-    '.big.green{background:#16a34a;}' +
-    '.big.blue{background:#0284c7;}' +
-    '.big.slate{background:#334155;}' +
-    '.divider{height:1px;background:#334155;margin:22px 0;}' +
+    '.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}' +
+    '.mini{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;' +
+      'border:1px solid #334155;border-radius:10px;padding:14px 8px;cursor:pointer;font-weight:700;font-size:.9rem;' +
+      'background:#1e293b;color:#e2e8f0;transition:border-color .12s,background .12s;}' +
+    '.mini:hover{border-color:#38bdf8;background:#22304a;}' +
+    '.mini .mic{font-size:1.4rem;line-height:1;}' +
+    '.divider{height:1px;background:#334155;margin:20px 0;}' +
     '.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;font-weight:700;' +
       'padding:11px 18px;border-radius:10px;z-index:3;opacity:0;transition:opacity .2s;font-size:.88rem;max-width:90%;text-align:center;}' +
     '.toast.show{opacity:1;}' +
@@ -133,23 +132,26 @@
     '<div class="overlay" data-close></div>' +
     '<div class="panel">' +
       '<div class="hd">' +
-        '<div class="ttl">📦 存檔快速搬移<span class="ver"></span><span class="org"></span></div>' +
-        '<a class="home" target="_blank" rel="noopener" title="開啟說明 / 首頁">🏠 首頁</a>' +
+        '<div class="ttl">📦 存檔搬家<span class="ver"></span><span class="org"></span></div>' +
+        '<a class="home" target="_blank" rel="noopener" title="開啟說明頁">❓ 說明</a>' +
         '<button class="x" data-close title="關閉">✕</button>' +
       '</div>' +
       '<div class="body">' +
-        '<div class="grp-title">匯出（把這個網站的存檔帶走）</div>' +
-        '<div class="hint">把目前網站的<b>整包存檔</b>打包帶到別台電腦：可下載成檔案，或複製成一段文字。</div>' +
-        '<button class="big blue" id="doExport"><span class="ic">📤</span><span>匯出成檔案<span class="sub">下載成一個檔案，帶到別台電腦</span></span></button>' +
-        '<button class="big blue" id="doCopy"><span class="ic">📋</span><span>複製成文字字串<span class="sub">變成一段文字，貼到雲端筆記 / 通訊軟體帶走</span></span></button>' +
+        '<div class="seclabel">📤 把存檔帶走</div>' +
+        '<div class="row2">' +
+          '<button class="mini" id="doExport"><span class="mic">📤</span>存成檔案</button>' +
+          '<button class="mini" id="doCopy"><span class="mic">📋</span>複製文字</button>' +
+        '</div>' +
         '<input type="file" id="fileInput" accept=".json,application/json" style="display:none">' +
 
         '<div class="divider"></div>' +
 
-        '<div class="grp-title">匯入（直接覆蓋目前存檔）</div>' +
-        '<div class="hint warn">⚠️ 匯入會用帶進來的存檔<b>整包覆蓋</b>目前網站的存檔（原本的會被取代），完成後<b>自動重新整理頁面</b>。</div>' +
-        '<button class="big green" id="doImport"><span class="ic">📥</span><span>從檔案匯入<span class="sub">讀取存檔檔案，覆蓋目前存檔</span></span></button>' +
-        '<button class="big slate" id="doPasteImport"><span class="ic">📝</span><span>貼上字串匯入<span class="sub">把另一台複製的文字貼進來覆蓋</span></span></button>' +
+        '<div class="seclabel">📥 從別台讀回來</div>' +
+        '<div class="hint warn">⚠️ 會整包覆蓋目前存檔，原本的會不見、無法復原。</div>' +
+        '<div class="row2">' +
+          '<button class="mini" id="doImport"><span class="mic">📥</span>讀取檔案</button>' +
+          '<button class="mini" id="doPasteImport"><span class="mic">📝</span>貼上文字</button>' +
+        '</div>' +
         '<textarea id="ioText" placeholder="把存檔字串貼在這裡（貼上後會自動匯入）" style="display:none;width:100%;height:90px;margin-top:10px;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;font-size:.78rem;font-family:monospace;resize:vertical;"></textarea>' +
       '</div>' +
     '</div>' +
@@ -187,7 +189,7 @@
     if (!dataCount(data)) { toast('目前這個網站沒有存檔可以匯出', true); return; }
     var name = ORIGIN.replace(/^https?:\/\//, '').replace(/[^\w.-]/g, '_');
     download('存檔_' + name + '_' + fmtTime(Date.now()).replace(/[\/: ]/g, '') + '.json', exportPayload(data));
-    toast('✓ 已下載存檔（' + dataCount(data) + ' 項）');
+    toast('✓ 已下載存檔檔案');
   });
 
   /* ---- 複製成文字字串 ---- */
@@ -197,7 +199,7 @@
     var s = toB64(exportPayload(data));
     var ta = $('#ioText');
     ta.style.display = 'block'; ta.value = s; ta.focus(); ta.select();
-    var ok = function () { toast('✓ 已複製存檔字串到剪貼簿（' + dataCount(data) + ' 項）'); };
+    var ok = function () { toast('✓ 已複製存檔字串到剪貼簿'); };
     var manualHint = function () { toast('✓ 已產生字串（已選取，請按 Ctrl+C 手動複製）'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(s).then(ok, manualHint);
@@ -206,7 +208,7 @@
 
   /* ---- 匯入共用：直接覆蓋、重新整理 ---- */
   function doOverwrite(data) {
-    if (!confirm('要用匯入的存檔覆蓋「目前網站」的存檔嗎？\n（' + dataCount(data) + ' 項，目前的存檔會被取代、無法復原）\n\n完成後會「重新整理頁面」。')) return;
+    if (!confirm('用匯入的存檔覆蓋目前網站？\n原本的會被取代、無法復原，完成後重整頁面。')) return;
     try {
       overwriteData(data);
     } catch (e) {

@@ -1,13 +1,13 @@
 /*
- * 存檔管理小工具 (SaveData Manager) — 簡易版
- * 由書籤注入目標網頁，給「不懂程式」的使用者管理該網站的存檔(localStorage)。
+ * 存檔管家 (SaveData Manager) — 簡易版
+ * 由書籤注入目標網頁，讓一般使用者輕鬆管理該網站的存檔(localStorage)。
  * 只提供四個動作：備份、還原、匯出（換電腦）、匯入。不顯示原始資料內容。
  * 以 Shadow DOM 隔離 UI，避免與目標網頁的樣式衝突。
  */
 (function () {
   'use strict';
 
-  var VERSION = '1.6.0';
+  var VERSION = '1.7.0';
 
   if (window.__SDM__) { window.__SDM__.open(); return; }
 
@@ -16,7 +16,7 @@
   var HOME_URL = '';
   try { if (SCRIPT_URL) HOME_URL = new URL('.', SCRIPT_URL).href; } catch (e) {}
 
-  try { console.log('%c存檔管理工具 v' + VERSION, 'color:#38bdf8;font-weight:bold'); } catch (e) {}
+  try { console.log('%c存檔管家 v' + VERSION, 'color:#38bdf8;font-weight:bold'); } catch (e) {}
 
   var DB_NAME = 'SaveDataManager';
   var STORE = 'backups';
@@ -271,15 +271,20 @@
     '.hd .home:hover{background:#334155;color:#fff;}' +
     '.x{background:#273449;border:1px solid #334155;color:#e2e8f0;border-radius:8px;cursor:pointer;width:36px;height:36px;font-size:1.15rem;}' +
     '.x:hover{background:#334155;}' +
-    '.tabs{display:flex;background:#1e293b;border-bottom:1px solid #334155;}' +
-    '.tab{flex:1;padding:13px 6px;text-align:center;cursor:pointer;font-size:.92rem;font-weight:700;color:#94a3b8;border-bottom:2px solid transparent;}' +
-    '.tab:hover{color:#cbd5e1;}' +
-    '.tab.on{color:#38bdf8;border-bottom-color:#38bdf8;background:#0f172a;}' +
     '.body{flex:1;overflow-y:auto;padding:18px;}' +
-    '.sec{display:none;}' +
-    '.sec.on{display:block;}' +
+    /* 區塊標題（單一畫面、無分頁；備份在上、換電腦在下，都直接看得到） */
+    '.seclabel{font-size:1.02rem;font-weight:800;color:#e2e8f0;margin:0 0 12px;display:flex;align-items:center;gap:8px;}' +
+    '.seclabel small{font-size:.76rem;font-weight:400;color:#94a3b8;}' +
     '.grp-title{font-size:.8rem;color:#64748b;font-weight:700;letter-spacing:.04em;margin:0 0 10px;text-transform:uppercase;}' +
-    '.hint{font-size:.82rem;color:#94a3b8;line-height:1.7;margin:0 0 16px;background:#1e293b;border-radius:10px;padding:12px 14px;}' +
+    '.subhint{font-size:.78rem;color:#94a3b8;margin:0 0 10px;line-height:1.7;}' +
+    /* 換電腦用的小型按鈕（比立即備份小，兩欄並排，整段才不會太長） */
+    '.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}' +
+    '.mini{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;' +
+      'border:1px solid #334155;border-radius:10px;padding:11px 8px;cursor:pointer;font-weight:700;font-size:.86rem;' +
+      'background:#1e293b;color:#e2e8f0;transition:border-color .12s,background .12s;}' +
+    '.mini:hover{border-color:#38bdf8;background:#22304a;}' +
+    '.mini .mic{font-size:1.25rem;line-height:1;}' +
+    '.mini .msub{font-size:.68rem;font-weight:400;color:#94a3b8;}' +
     '.iostat{font-size:.8rem;color:#cbd5e1;line-height:1.7;margin:0 0 16px;background:#13203a;border:1px solid #1e3a5f;border-radius:10px;padding:10px 14px;}' +
     '.iostat .warn{color:#fcd34d;font-weight:700;}' +
     '.big{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:none;border-radius:12px;padding:15px 16px;' +
@@ -292,12 +297,19 @@
     '.big.slate{background:#334155;}' +
     '.namebox{display:flex;gap:8px;margin-bottom:10px;}' +
     '.namebox input{flex:1;background:#0b1120;color:#e2e8f0;border:1px solid #334155;border-radius:10px;padding:11px 12px;font-size:.9rem;}' +
+    '.namebox.optional input{font-size:.82rem;padding:9px 12px;color:#cbd5e1;}' +
+    '.namehint{font-size:.74rem;color:#64748b;margin:0 0 4px;}' +
     '.divider{height:1px;background:#334155;margin:22px 0;}' +
-    '.bk{display:flex;align-items:center;gap:10px;border:1px solid #334155;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#1e293b;}' +
+    '.bk{display:flex;align-items:center;gap:8px;border:1px solid #334155;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#1e293b;}' +
     '.bk .info{flex:1;min-width:0;}' +
-    '.bk .bn{font-weight:700;font-size:.95rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+    '.bk .nrow{display:flex;align-items:center;gap:5px;min-width:0;}' +
+    '.bk .nrow.editable{cursor:pointer;}' +
+    '.bk .bn{font-weight:700;font-size:.95rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}' +
+    '.bk .nrow.editable:hover .bn{color:#38bdf8;}' +
+    '.bk .pen{font-size:.78rem;flex:none;opacity:.55;}' +
+    '.bk .nrow.editable:hover .pen{opacity:1;}' +
     '.bk .bm{font-size:.74rem;color:#94a3b8;margin-top:3px;}' +
-    '.bk button{border:none;border-radius:8px;padding:9px 12px;font-size:.84rem;font-weight:700;cursor:pointer;}' +
+    '.bk button{border:none;border-radius:8px;cursor:pointer;font-weight:700;}' +
     '.autobox{margin-top:18px;border:1px solid #334155;border-radius:12px;background:#161f30;overflow:hidden;}' +
     '.autobox>summary{cursor:pointer;padding:12px 14px;font-size:.86rem;font-weight:700;color:#94a3b8;list-style:none;user-select:none;display:flex;align-items:center;gap:8px;}' +
     '.autobox>summary::-webkit-details-marker{display:none;}' +
@@ -307,9 +319,10 @@
     '.autobox .ahint{font-size:.75rem;color:#64748b;margin:0 0 10px;line-height:1.6;}' +
     '.clearauto{margin-left:auto;background:#273449;color:#fca5a5;border:1px solid #3f2a30;border-radius:7px;padding:5px 10px;font-size:.76rem;font-weight:700;cursor:pointer;}' +
     '.clearauto:hover{background:#7f1d1d;color:#fff;border-color:#7f1d1d;}' +
-    '.bk .restore{background:#0284c7;color:#fff;}' +          /* 還原＝藍色 */
-    '.bk .overwrite{background:#16a34a;color:#fff;}' +        /* 備份至此＝綠色，與「立即備份」同色 */
-    '.bk .restore:hover,.bk .overwrite:hover{filter:brightness(1.1);}' +
+    '.bk .restore{background:#0284c7;color:#fff;padding:11px 18px;font-size:.92rem;}' +   /* 還原＝主要動作，藍色放大 */
+    '.bk .restore:hover{filter:brightness(1.1);}' +
+    '.bk .overwrite{background:#273449;color:#cbd5e1;border:1px solid #334155;padding:8px 10px;font-size:.76rem;}' +  /* 存到這格＝次要動作 */
+    '.bk .overwrite:hover{background:#334155;color:#fff;}' +
     '.bk .del{background:#273449;color:#fca5a5;font-size:1rem;padding:9px 11px;}' +
     '.bk .del:hover{background:#7f1d1d;color:#fff;}' +
     '.empty{text-align:center;color:#64748b;padding:26px 10px;font-size:.88rem;line-height:1.7;}' +
@@ -317,56 +330,63 @@
       'padding:11px 18px;border-radius:10px;z-index:3;opacity:0;transition:opacity .2s;font-size:.88rem;max-width:90%;text-align:center;}' +
     '.toast.show{opacity:1;}' +
     '.toast.err{background:#ef4444;}' +
+    /* 還原 / 匯入後的整頁重整：用大提示蓋住面板，避免使用者以為當掉 */
+    '.notice{position:absolute;inset:0;background:#0f172a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:4;text-align:center;padding:24px;}' +
+    '.notice.show{display:flex;}' +
+    '.notice .nspin{width:36px;height:36px;border:3px solid #334155;border-top-color:#38bdf8;border-radius:50%;animation:nspin 1s linear infinite;}' +
+    '.notice .nbig{font-size:1.15rem;font-weight:800;color:#e2e8f0;}' +
+    '.notice .nsub{font-size:.82rem;color:#94a3b8;}' +
+    '@keyframes nspin{to{transform:rotate(360deg)}}' +
     '</style>' +
     '<div class="overlay" data-close></div>' +
     '<div class="panel">' +
       '<div class="hd">' +
-        '<div class="ttl">💾 存檔管理<span class="ver"></span><span class="org"></span></div>' +
-        '<a class="home" target="_blank" rel="noopener" title="開啟說明 / 首頁">🏠 首頁</a>' +
+        '<div class="ttl">💾 存檔管家<span class="ver"></span><span class="org"></span></div>' +
+        '<a class="home" target="_blank" rel="noopener" title="開啟說明頁">❓ 說明</a>' +
         '<button class="x" data-close title="關閉">✕</button>' +
-      '</div>' +
-      '<div class="tabs">' +
-        '<div class="tab on" data-tab="backup">💾 備份</div>' +
-        '<div class="tab" data-tab="io">🔄 匯出 / 匯入</div>' +
       '</div>' +
       '<div class="body">' +
 
-        '<div class="sec on" data-sec="backup">' +
-          '<div class="grp-title">備份目前存檔</div>' +
-          '<div class="namebox">' +
-            '<input type="text" id="bkName" placeholder="取個名字（選填，按 Enter 直接備份）">' +
-          '</div>' +
-          '<button class="big green" id="doBackup"><span class="ic">💾</span><span>立即備份<span class="sub">把現在的存檔存起來，之後可以還原</span></span></button>' +
-          '<div class="divider"></div>' +
-          '<div class="grp-title">我的備份</div>' +
-          '<div id="bkList"></div>' +
-          '<details class="autobox" id="autoWrap" style="display:none">' +
-            '<summary>🛟 自動備份 <span id="autoCount" style="color:#64748b;font-weight:400"></span>' +
-              '<button id="clearAuto" class="clearauto">🗑 清空</button>' +
-            '</summary>' +
-            '<div class="inner">' +
-              '<p class="ahint">還原 / 匯入前系統自動存的存檔，萬一要回復可以用，不會跟著匯出。</p>' +
-              '<div id="autoList"></div>' +
-            '</div>' +
-          '</details>' +
+        /* ===== 上半：備份 / 還原（最常用，放最上面） ===== */
+        '<button class="big green" id="doBackup"><span class="ic">💾</span>立即備份</button>' +
+        '<div class="namebox optional">' +
+          '<input type="text" id="bkName" placeholder="取名（可不填）">' +
         '</div>' +
 
-        '<div class="sec" data-sec="io">' +
-          '<div class="hint">匯出的是<b>備份清單</b>（這台電腦存的所有手動備份），不是網頁當下的存檔。匯入時若是<b>同一份</b>備份會直接<b>覆蓋</b>（可拿舊版蓋回現況），新的才會新增。要套用某一份，再到「💾 備份」分頁按「還原」。</div>' +
-          '<div class="iostat" id="ioStat"></div>' +
-          '<div class="grp-title">用檔案搬</div>' +
-          '<button class="big blue" id="doExport"><span class="ic">📤</span><span>匯出成檔案<span class="sub">下載成一個檔案，帶到別台電腦</span></span></button>' +
-          '<button class="big slate" id="doImport"><span class="ic">📥</span><span>從檔案匯入<span class="sub">讀取備份檔，加進 / 覆蓋備份清單</span></span></button>' +
-          '<input type="file" id="fileInput" accept=".json,application/json" style="display:none">' +
-          '<div class="divider"></div>' +
-          '<div class="grp-title">用文字字串搬（免存檔）</div>' +
-          '<div class="hint">在這台按「複製」，把字串貼到雲端筆記 / 通訊軟體；到另一台按「貼上字串匯入」即可。</div>' +
-          '<button class="big blue" id="doCopy"><span class="ic">📋</span><span>複製備份字串<span class="sub">把所有備份變成一段文字複製起來</span></span></button>' +
-          '<button class="big slate" id="doPasteImport"><span class="ic">📝</span><span>貼上字串匯入<span class="sub">把另一台複製的文字貼進來匯入</span></span></button>' +
-          '<textarea id="ioText" placeholder="把備份字串貼在這裡（貼上後會自動匯入）" style="display:none;width:100%;height:90px;margin-top:10px;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;font-size:.78rem;font-family:monospace;resize:vertical;"></textarea>' +
+        '<div class="divider"></div>' +
+
+        '<div class="seclabel">📂 我的備份</div>' +
+        '<div id="bkList"></div>' +
+        '<details class="autobox" id="autoWrap" style="display:none">' +
+          '<summary>🛟 自動備份 <span id="autoCount" style="color:#64748b;font-weight:400"></span>' +
+            '<button id="clearAuto" class="clearauto">🗑 清空</button>' +
+          '</summary>' +
+          '<div class="inner">' +
+            '<p class="ahint">還原 / 匯入前自動存的，不會跟著帶走。</p>' +
+            '<div id="autoList"></div>' +
+          '</div>' +
+        '</details>' +
+
+        '<div class="divider"></div>' +
+
+        /* ===== 下半：換一台電腦用（同樣常見，直接看得到，用小按鈕收短） ===== */
+        '<div class="seclabel">💻 換一台電腦用</div>' +
+        '<div class="iostat" id="ioStat"></div>' +
+        '<div class="grp-title">把備份帶走</div>' +
+        '<div class="row2">' +
+          '<button class="mini" id="doExport"><span class="mic">📤</span>存成檔案</button>' +
+          '<button class="mini" id="doCopy"><span class="mic">📋</span>複製文字</button>' +
         '</div>' +
+        '<div class="grp-title" style="margin-top:14px">從別台讀進來</div>' +
+        '<div class="row2">' +
+          '<button class="mini" id="doImport"><span class="mic">📥</span>讀取檔案</button>' +
+          '<button class="mini" id="doPasteImport"><span class="mic">📝</span>貼上文字</button>' +
+        '</div>' +
+        '<input type="file" id="fileInput" accept=".json,application/json" style="display:none">' +
+        '<textarea id="ioText" placeholder="把備份字串貼在這裡（貼上後會自動讀進來）" style="display:none;width:100%;height:90px;margin-top:10px;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;font-size:.78rem;font-family:monospace;resize:vertical;"></textarea>' +
 
       '</div>' +
+      '<div class="notice" id="notice"><div class="nspin"></div><div class="nbig" id="noticeText"></div><div class="nsub">頁面重整後，網站才會讀到還原的進度</div></div>' +
     '</div>' +
     '<div class="toast" id="toast"></div>';
 
@@ -390,9 +410,11 @@
   }
 
   // 改完存檔後重新整理頁面，目標網頁才會重新讀取新的存檔。
+  // 用大提示蓋住整個面板，讓「整頁重整」變成預期內的事，而不是嚇到使用者以為當掉。
   function finishAndReload(msg) {
-    toast(msg);
-    setTimeout(function () { location.reload(); }, 700);
+    $('#noticeText').textContent = msg || '✓ 完成，正在重新整理頁面…';
+    $('#notice').classList.add('show');
+    setTimeout(function () { location.reload(); }, 1000);
   }
 
   /* ---- 儲存錯誤共用處理 ---- */
@@ -416,16 +438,6 @@
   }
 
   root.querySelectorAll('[data-close]').forEach(function (el) { el.addEventListener('click', close); });
-
-  /* ---- 分頁切換 ---- */
-  root.querySelectorAll('.tab').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      root.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('on'); });
-      root.querySelectorAll('.sec').forEach(function (s) { s.classList.remove('on'); });
-      tab.classList.add('on');
-      $('[data-sec="' + tab.dataset.tab + '"]').classList.add('on');
-    });
-  });
 
   /* ---- 備份 ---- */
   $('#doBackup').addEventListener('click', function () {
@@ -472,21 +484,17 @@
       })
       .then(function (rows) { return rows.filter(function (r) { return !r.auto; }); });
   }
-  // 匯出前置檢查：使用者常以為匯出的是「網頁當下的存檔」，其實是備份清單。
-  // 偵測到目前存檔還沒備份時先問要不要補一筆，避免帶走的檔案漏掉最新進度。
-  // 回傳要匯出的手動備份陣列；回傳 null 表示中止匯出。
+  // 帶走前的準備：使用者腦中想的是「把現在的進度帶走」，不該被「清單 vs 當下存檔」的差別卡住。
+  // 所以「設計上就把目前進度一起打包」——目前進度若還沒備份，自動補一筆，不再用警告文字逼使用者判斷。
+  // 回傳要帶走的手動備份陣列；回傳 null 表示沒東西可帶。
   function prepareExport() {
     return listBackups().then(function (rows) {
       var manual = rows.filter(function (r) { return !r.auto; });
-      if (!manual.length) {
-        if (!dataCount(snapshot())) { toast('目前沒有存檔、也沒有備份可以匯出', true); return null; }
-        if (!confirm('還沒有任何備份。\n要先把「目前的存檔」備份起來再匯出嗎？')) return null;
+      var hasData = dataCount(snapshot()) > 0;
+      if (!manual.length && !hasData) { toast('目前沒有進度、也沒有備份可以帶走', true); return null; }
+      // 目前進度還沒進到任何一筆備份 → 自動補一筆，確保帶走的內容包含最新進度。
+      if (hasData && (!manual.length || hasUnbackedChanges(manual))) {
         return backupCurrentThenList();
-      }
-      if (hasUnbackedChanges(manual)) {
-        if (confirm('注意：匯出的是「備份清單」，你目前的存檔還沒有備份，直接匯出不會包含它。\n\n要先把目前的存檔備份一份、一起匯出嗎？\n（按「取消」＝只匯出既有的 ' + manual.length + ' 筆備份）')) {
-          return backupCurrentThenList();
-        }
       }
       return manual;
     });
@@ -533,17 +541,15 @@
         var total = added + updated;
         // 只處理一筆：問要不要立刻還原（換電腦 / 兩地同步的主要情境）。
         if (total === 1 && last) {
-          toast('✓ 已匯入 1 筆備份（' + (added ? '新增' : '覆蓋') + '）');
-          if (confirm('已匯入「' + (last.name || '此備份') + '」。\n要立刻還原（套用到目前網站）嗎？\n目前的存檔會被它取代。\n（系統會自動先幫你備份目前的存檔）\n\n完成後會「重新整理頁面」。')) {
+          toast('✓ 已讀進 1 筆備份（' + (added ? '新增' : '覆蓋') + '）');
+          if (confirm('讀進了「' + (last.name || '此備份') + '」，現在就套用？\n目前進度會被取代（會自動先備份），完成後重整頁面。')) {
             performRestore(last);
             return;
           }
-          $('.tab[data-tab="backup"]').click();
           return;
         }
-        // 多筆：不自動還原，請使用者自行到清單選要還原的那一份。
-        $('.tab[data-tab="backup"]').click();
-        toast('✓ 匯入完成：新增 ' + added + ' 筆、覆蓋 ' + updated + ' 筆，請在清單中選擇要還原的備份');
+        // 多筆：不自動還原，清單就在上方，請使用者自行挑要還原的那一份。
+        toast('✓ 讀進完成：新增 ' + added + ' 筆、覆蓋 ' + updated + ' 筆，請在上方清單選要還原的那份');
       });
     }).catch(function (err) { handleStoreError(err, '匯入失敗'); });
   }
@@ -618,28 +624,27 @@
     });
   }
 
-  /* ---- 匯出 / 匯入分頁的備份狀態列 ---- */
+  /* ---- 「換電腦」頁的狀態列 ---- */
+  // 帶走時一律自動含目前進度（見 prepareExport），所以這裡不再警告「沒包含」，改成正向告知會一起帶走。
   function renderIoStat() {
     var el = $('#ioStat');
     listBackups().then(function (rows) {
       var manual = rows.filter(function (r) { return !r.auto; });
       el.textContent = '';
-      if (!manual.length) {
-        el.textContent = '還沒有任何備份。按「匯出」時可以先把目前的存檔備份起來一起帶走。';
+      if (!manual.length && !dataCount(snapshot())) {
+        el.textContent = '目前沒有進度、也沒有備份可以帶走。';
         return;
       }
       var line = document.createElement('div');
-      line.textContent = '📦 共 ' + manual.length + ' 筆備份，最新：' + fmtTime(manual[0].createdAt) + '『' + (manual[0].name || '(未命名)') + '』';
-      el.appendChild(line);
-      if (hasUnbackedChanges(manual)) {
-        var warn = document.createElement('div');
-        warn.className = 'warn';
-        warn.textContent = '⚠️ 目前的存檔還沒備份，直接匯出不會包含它';
-        el.appendChild(warn);
+      if (manual.length) {
+        line.textContent = '📦 共 ' + manual.length + ' 筆' +
+          (hasUnbackedChanges(manual) ? '（會一併帶走目前進度）' : '（已含目前進度）');
+      } else {
+        line.textContent = '📦 會把目前進度打包帶走';
       }
+      el.appendChild(line);
     }).catch(function () { el.textContent = ''; });
   }
-  root.querySelector('.tab[data-tab="io"]').addEventListener('click', renderIoStat);
 
   /* ---- 備份清單 ---- */
   function makeCard(r) {
@@ -648,18 +653,41 @@
 
     var info = document.createElement('div');
     info.className = 'info';
+    var nrow = document.createElement('div');
+    nrow.className = 'nrow';
     var bn = document.createElement('div');
     bn.className = 'bn';
     bn.textContent = r.name || '(未命名)';
+    nrow.appendChild(bn);
     var bm = document.createElement('div');
     bm.className = 'bm';
-    bm.textContent = fmtTime(r.createdAt) + ' · ' + dataCount(r.data || {}) + ' 項';
-    info.appendChild(bn); info.appendChild(bm);
+    bm.textContent = fmtTime(r.createdAt);
+    info.appendChild(nrow); info.appendChild(bm);
+
+    // 點名字就能改名（取名是選填，多數備份預設是日期時間，事後常想改成看得懂的名字）。
+    // 自動備份是系統暫存、不開放改名。
+    if (!r.auto) {
+      var pen = document.createElement('span');
+      pen.className = 'pen'; pen.textContent = '✏️';
+      nrow.appendChild(pen);
+      nrow.classList.add('editable');
+      nrow.title = '點一下改名字';
+      nrow.addEventListener('click', function () {
+        var nv = prompt('幫這份備份改名字：', r.name || '');
+        if (nv === null) return;            // 按取消
+        nv = nv.trim();
+        if (!nv) { toast('名字不能空白', true); return; }
+        if (nv === r.name) return;
+        putBackup({ id: r.id, uid: r.uid || genUid(), name: nv, origin: ORIGIN, createdAt: r.createdAt, data: r.data || {} })
+          .then(function () { r.name = nv; renderBackups(); toast('✓ 已改名為：' + nv); })
+          .catch(function (e) { handleStoreError(e, '改名失敗'); });
+      });
+    }
 
     var restore = document.createElement('button');
     restore.className = 'restore'; restore.textContent = '還原';
     restore.addEventListener('click', function () {
-      if (!confirm('要還原「' + (r.name || '此備份') + '」嗎？\n目前的存檔會被它取代。\n（系統會自動先幫你備份目前的存檔）\n\n完成後會「重新整理頁面」，網站才會讀到還原的存檔。')) return;
+      if (!confirm('還原「' + (r.name || '此備份') + '」？\n目前進度會被取代（會自動先備份），完成後重整頁面。')) return;
       performRestore(r);
     });
 
@@ -670,23 +698,26 @@
       deleteBackup(r.id).then(function () { renderBackups(); toast('已刪除備份'); });
     });
 
+    // 還原是這張卡片的主要動作，緊接在名稱後面、放大顯示。
     card.appendChild(info);
+    card.appendChild(restore);
+    // 「存到這格」是次要進階動作（把目前進度覆蓋到這份），縮小擺在還原之後。
     // 自動備份不提供覆蓋（它本來就是系統暫存用）。
     if (!r.auto) {
       var overwrite = document.createElement('button');
-      overwrite.className = 'overwrite'; overwrite.textContent = '備份至此';
-      overwrite.title = '把目前的存檔備份到這一格（取代原內容）';
+      overwrite.className = 'overwrite'; overwrite.textContent = '存到這格';
+      overwrite.title = '把目前的進度覆蓋到這一份（取代原內容）';
       overwrite.addEventListener('click', function () {
         var data = snapshot();
-        if (!dataCount(data)) { toast('目前沒有存檔可以覆蓋', true); return; }
-        if (!confirm('要把「目前的存檔」備份到「' + (r.name || '此備份') + '」這一格嗎？\n這份備份原本的內容會被取代，無法復原。')) return;
+        if (!dataCount(data)) { toast('目前沒有進度可以存', true); return; }
+        if (!confirm('把目前進度存到「' + (r.name || '此備份') + '」？\n這份原本的內容會被取代，無法復原。')) return;
         putBackup({ id: r.id, uid: r.uid || genUid(), name: r.name, origin: ORIGIN, createdAt: Date.now(), data: data })
-          .then(function () { renderBackups(); toast('✓ 已備份至此：' + (r.name || '此備份')); })
+          .then(function () { renderBackups(); toast('✓ 已存到：' + (r.name || '此備份')); })
           .catch(function (e) { handleStoreError(e, '備份失敗'); });
       });
       card.appendChild(overwrite);
     }
-    card.appendChild(restore); card.appendChild(del);
+    card.appendChild(del);
     return card;
   }
 
@@ -699,7 +730,7 @@
 
       list.innerHTML = '';
       if (!manual.length) {
-        list.innerHTML = '<div class="empty">還沒有任何備份。<br>按上面的「💾 立即備份」就會出現在這裡。</div>';
+        list.innerHTML = '<div class="empty">還沒有任何備份。<br>按最上面的「💾 立即備份」就會出現在這裡。</div>';
       } else {
         manual.forEach(function (r) { list.appendChild(makeCard(r)); });
       }
@@ -720,7 +751,12 @@
   }
 
   /* ---- 對外控制 ---- */
-  function open() { host.style.display = ''; renderBackups(); }
+  // 單一畫面：打開就直接看到備份 / 還原 / 換電腦，不必先選分頁或入口。
+  function open() {
+    host.style.display = '';
+    $('#notice').classList.remove('show');
+    renderBackups();
+  }
   function close() { host.style.display = 'none'; }
 
   document.addEventListener('keydown', function (e) {

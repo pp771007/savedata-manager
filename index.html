@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>存檔管理小工具 · 安裝教學</title>
+<title>存檔管家 · 安裝教學</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<meta name="description" content="書籤式存檔管理小工具：在任何網站備份/還原 localStorage，並可跨裝置匯出匯入。純前端、不上傳資料。">
+<meta name="description" content="書籤式存檔管家：在任何網站備份/還原 localStorage，並可跨裝置匯出匯入。純前端、不上傳資料。">
 <style>
   :root {
     --bg: #0f172a;
@@ -27,13 +27,13 @@
     line-height: 1.8;
     min-height: 100vh;
   }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
-  header { text-align: center; margin-bottom: 40px; }
-  h1 { font-size: 2.2rem; margin: 0 0 12px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 26px 20px 80px; }
+  header { text-align: center; margin-bottom: 20px; }
+  h1 { font-size: 1.9rem; margin: 0 0 6px; }
   h1 .emoji { filter: drop-shadow(0 2px 8px rgba(56,189,248,.4)); }
-  .subtitle { color: var(--muted); font-size: 1.08rem; margin: 0; }
+  .subtitle { color: var(--muted); font-size: 1rem; margin: 0; }
   .switch {
-    display: inline-flex; align-items: center; gap: 7px; margin-top: 18px;
+    display: inline-flex; align-items: center; gap: 7px; margin-top: 12px;
     background: var(--card); border: 1px solid var(--line); color: var(--text);
     text-decoration: none; font-size: .9rem; font-weight: 600;
     padding: 9px 16px; border-radius: 20px; transition: border-color .12s, transform .12s;
@@ -84,6 +84,66 @@
   .drag-zone { text-align: center; padding: 6px 0 0; }
   .arrow-up { font-size: 1.6rem; color: var(--accent); animation: bob 1.2s ease-in-out infinite; }
   @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  /* 安裝動態示範：自動循環演示「按住按鈕→拖到書籤列→放開」。不看字的人會看會動的東西。 */
+  .demo {
+    position: relative; height: 168px; margin: 18px 0 4px;
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0b1120;
+  }
+  .demo .demo-bar {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    background: #131c30; border-bottom: 2px dashed var(--accent); font-size: .8rem; color: var(--muted);
+  }
+  .demo .demo-slot {
+    border: 2px dashed var(--accent); border-radius: 8px; padding: 4px 12px;
+    color: var(--accent); font-weight: 700; background: rgba(56,189,248,.06);
+    transition: background .2s; animation: slotFlash 4s ease-in-out infinite;
+  }
+  @keyframes slotFlash {
+    0%,42% { background: rgba(56,189,248,.06); }
+    52%,72% { background: rgba(34,197,94,.28); border-color: var(--accent2); color: #bbf7d0; }
+    82%,100% { background: rgba(56,189,248,.06); }
+  }
+  .demo .demo-ic { opacity: .5; }
+  .demo .demo-chip {
+    position: absolute; left: 50%; top: 96px; margin-left: -88px; width: 176px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(135deg, var(--accent), #0ea5e9); color: #04263b;
+    font-weight: 800; font-size: .92rem; padding: 11px 0; border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(56,189,248,.4);
+    animation: dragChip 4s ease-in-out infinite;
+  }
+  .demo .demo-cursor {
+    position: absolute; left: 50%; top: 96px; margin-left: 56px; font-size: 1.3rem;
+    animation: dragCursor 4s ease-in-out infinite; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5));
+  }
+  /* 由下方靜止 → 被抓住(縮一下) → 往上拖進書籤列 → 放開定住 → 淡出回到下方重來 */
+  @keyframes dragChip {
+    0%   { transform: translateY(0) scale(1); opacity: 1; }
+    8%   { transform: translateY(0) scale(.93); opacity: 1; }
+    45%  { transform: translateY(-86px) scale(.93); opacity: 1; }
+    55%  { transform: translateY(-86px) scale(1); opacity: 1; }
+    72%  { transform: translateY(-86px) scale(1); opacity: 1; }
+    80%  { transform: translateY(-86px) scale(1); opacity: 0; }
+    81%  { transform: translateY(0) scale(1); opacity: 0; }
+    92%  { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  @keyframes dragCursor {
+    0%   { transform: translateY(0) scale(1); }
+    8%   { transform: translateY(0) scale(.85); }
+    45%  { transform: translateY(-86px) scale(.85); }
+    55%  { transform: translateY(-86px) scale(1); }
+    100% { transform: translateY(-86px) scale(1); }
+  }
+  .demo .demo-cap {
+    position: absolute; left: 0; right: 0; bottom: 8px; text-align: center;
+    font-size: .78rem; color: var(--muted);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .demo .demo-chip, .demo .demo-cursor, .demo .demo-slot { animation: none; }
+    .demo .demo-chip { top: 12px; }
+  }
   .bm-center { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 4px 0 0; }
   .bookmarklet {
     display: inline-flex; align-items: center; gap: 8px;
@@ -141,9 +201,12 @@
     background: #0b1120; border: 1px solid var(--line); border-bottom-width: 2px;
     border-radius: 6px; padding: 2px 8px; font-size: .82rem; font-family: monospace;
   }
-  .faq dt { font-weight: 700; margin-top: 16px; color: #cbd5e1; }
+  .faq dt { font-weight: 700; margin-top: 16px; color: #cbd5e1; scroll-margin-top: 20px; }
   .faq dt:first-child { margin-top: 4px; }
   .faq dd { margin: 4px 0 0; color: var(--muted); font-size: .92rem; }
+  /* 從書籤被擋的提示連過來時（#faq-blocked），把這題標出來讓人一眼看到 */
+  .faq dt:target { color: var(--accent); }
+  .faq dt:target + dd { background: #0b1120; border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 13px; }
   .tip { font-size: .9rem; color: var(--muted); background: #0b1120; border-radius: 10px; padding: 12px 14px; margin: 16px 0 0; border-left: 3px solid var(--accent2); }
   footer { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 30px; }
   .toast {
@@ -173,35 +236,32 @@
 </a>
 <div class="wrap">
   <header>
-    <h1><span class="emoji">💾</span> 存檔管理小工具</h1>
-    <p class="subtitle">幫你把網站存檔備份、搬到別台電腦的小幫手。<br>不用懂程式，照著下面三步做就好。</p>
-    <a class="switch" href="lite.html">📦 只想單純「整包匯出 / 覆蓋匯入」？用精簡版 →</a>
+    <h1><span class="emoji">💾</span> 存檔管家</h1>
+    <p class="subtitle">幫你把網站存檔備份、搬到別台電腦的小幫手。<br>把下面的按鈕拖到書籤列，就裝好了。</p>
+    <a class="switch" href="lite.html">📦 只想把存檔搬去另一台？用「存檔搬家」 →</a>
   </header>
 
   <!-- 步驟一：安裝 -->
   <div class="card">
-    <h2><span class="badge">1</span> 把按鈕放到「書籤列」</h2>
-    <p class="lead">書籤列就是瀏覽器上方那排放網站捷徑的地方。把下面的藍色按鈕<strong>用滑鼠按住、拖上去放開</strong>就好。</p>
+    <h2><span class="badge">1</span> 把按鈕拖到「書籤列」</h2>
+    <p class="lead">把下面這顆<strong>按住、往上拖到書籤列放開</strong>就裝好了（書籤列＝瀏覽器上方那排網站捷徑）。</p>
 
-    <div class="browser" aria-hidden="true">
-      <div class="bar">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        <span class="url">🔒 你的瀏覽器⋯⋯</span>
-      </div>
-      <div class="bmbar">
-        <span class="here">⭐ 放這裡</span>
-        <span class="ic">📁 我的最愛</span>
-        <span class="ic">📁 購物</span>
-        <span class="ic">＋ ⋯</span>
+    <div class="drag-zone">
+      <div class="bm-center">
+        <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，往上拖到書籤列！">💾 存檔管家</a>
+        <span class="grab-hint">👆 按住這顆，往上拖到書籤列放開</span>
       </div>
     </div>
 
-    <div class="drag-zone">
-      <div class="arrow-up">⬆️</div>
-      <div class="bm-center">
-        <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，拖到上面那排！">💾 存檔管理小工具</a>
-        <span class="grab-hint">👆 按住這顆，拖到上方書籤列放開</span>
+    <div class="demo" aria-hidden="true">
+      <div class="demo-bar">
+        <span class="demo-slot">⭐ 放這裡</span>
+        <span class="demo-ic">📁 我的最愛</span>
+        <span class="demo-ic">📁 購物</span>
       </div>
+      <span class="demo-chip">💾 存檔管家</span>
+      <span class="demo-cursor">👆</span>
+      <span class="demo-cap">↑ 大概像這樣</span>
     </div>
 
     <details class="alt">
@@ -211,7 +271,7 @@
         <ol style="font-size:.92rem;padding-left:20px;margin:0">
           <li>先按一下下面的綠色按鈕，把程式碼複製起來。</li>
           <li>在書籤列上<strong>按右鍵 → 新增書籤 / 加入網頁</strong>。</li>
-          <li>名稱隨便打（例如「存檔管理」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
+          <li>名稱隨便打（例如「存檔管家」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
         </ol>
         <p style="margin:14px 0 0"><button class="btn" id="copyBtn">📋 複製程式碼</button></p>
         <pre id="codeBox">載入中…</pre>
@@ -226,9 +286,9 @@
     <p class="lead">裝好之後，以後在任何網站都能用它。</p>
     <ol class="steps">
       <li>打開你想備份存檔的網站（例如某個網頁遊戲、線上工具）。</li>
-      <li>點一下書籤列上的 <strong>💾 存檔管理小工具</strong>。</li>
-      <li>畫面右邊會滑出一個小視窗，分成<strong>「💾 備份」</strong>和<strong>「🔄 匯出 / 匯入」</strong>兩個分頁。</li>
-      <li>在裡面備份、還原，或匯出帶去別台電腦。看完按右上角 ✕ 就收起來。</li>
+      <li>點一下書籤列上的 <strong>💾 存檔管家</strong>。</li>
+      <li>畫面右邊滑出小視窗：最上面一顆大大的 <strong>💾 立即備份</strong>，下面是<strong>你存過的備份</strong>（每份都有「還原」），再往下是 <strong>💻 換一台電腦用</strong>。</li>
+      <li>要存就按最上面、要回到以前按「還原」、要搬去別台看最下面那區。看完按右上角 ✕ 收起來。</li>
     </ol>
     <p class="tip">💡 想先試試看？現在就可以在<strong>這個網頁</strong>上點剛裝好的書籤，右邊就會跳出視窗。</p>
   </div>
@@ -237,37 +297,36 @@
   <div class="card">
     <h2><span class="badge">3</span> 它能做什麼</h2>
     <ul class="feat">
-      <li><b>備份</b>：把目前的存檔存起來，可以存好幾份（像不同的存檔格），每份都能取名字。</li>
-      <li><b>還原</b>：從備份清單一鍵把某一份存檔復原（復原後頁面會自動重新整理，存檔才會生效）。</li>
-      <li><b>備份至此</b>：把目前的存檔備份到某一份既有備份上（取代原內容），不會一直新增、清單不會越來越長（像覆蓋同一個存檔格）。</li>
-      <li><b>匯出 / 匯入（檔案）</b>：把你的<strong>所有備份打包成一個檔案</strong>下載，帶到另一台電腦讀進來。匯出帶走的是<strong>備份清單</strong>；如果你現在的存檔還沒備份，工具會先問你要不要備份一份一起帶走，不怕漏掉最新進度。</li>
-      <li><b>複製 / 貼上（文字字串）</b>：不想存檔案的話，可以把所有備份<strong>複製成一段文字</strong>，貼到雲端筆記或通訊軟體帶走；另一台按「貼上字串匯入」<strong>貼上後就會自動匯入</strong>。</li>
-      <li><b>聰明覆蓋</b>：匯入時若是<strong>同一份</strong>備份會直接覆蓋（可以拿舊版蓋回現在的存檔），是新的才會新增，兩台電腦來回搬也不會越堆越多。</li>
-      <li><b>自動保護</b>：還原或匯入前，會自動先幫你備份目前的存檔，萬一按錯也救得回來。</li>
+      <li><b>💾 存一份進度</b>：把目前的存檔存起來，可以存好幾份（像不同的存檔格），每份都能取名字。</li>
+      <li><b>⏪ 回到之前存的</b>：從清單一鍵把某一份進度復原（復原後頁面會自動重新整理才會生效）。</li>
+      <li><b>存到這格</b>：把目前進度覆蓋到某一份既有備份上（取代原內容），清單不會越來越長（像覆蓋同一個存檔格）。</li>
+      <li><b>💻 換一台電腦用</b>：把備份<strong>存成一個檔案</strong>或<strong>複製成一段文字</strong>帶走，另一台讀進來。<strong>帶走時會自動把目前進度一起打包</strong>，不用擔心漏掉最新進度。</li>
+      <li><b>聰明覆蓋</b>：讀進來時若是<strong>同一份</strong>備份會直接覆蓋（可以拿舊版蓋回現在的進度），是新的才會新增，兩台電腦來回搬也不會越堆越多。</li>
+      <li><b>自動保護</b>：還原或讀進備份前，會自動先幫你備份目前的進度，萬一按錯也救得回來。</li>
     </ul>
   </div>
 
   <!-- 常見問題 -->
   <div class="card">
-    <h2><span class="badge">？</span> 新手常見問題</h2>
+    <h2><span class="badge">？</span> 常見問題</h2>
     <dl class="faq">
       <dt>會不會把我的資料偷傳走？</dt>
       <dd>不會。整個工具只在你自己的瀏覽器裡跑，<strong>沒有任何資料會被上傳</strong>，也沒有伺服器。</dd>
 
       <dt>怎麼換到另一台電腦用同一份存檔？</dt>
-      <dd>到「🔄 匯出 / 匯入」分頁，有兩種方式任選：<br>
-        <strong>① 用檔案：</strong>按「匯出成檔案」下載 → 把檔案傳到新電腦（雲端、隨身碟、傳給自己都行）→ 在新電腦打開同一個網站、點書籤，按「從檔案匯入」選那個檔案。<br>
-        <strong>② 用文字（免存檔）：</strong>按「複製備份字串」→ 把那段文字貼到雲端筆記 / 通訊軟體 → 在新電腦按「貼上字串匯入」，<strong>貼上後就會自動匯入</strong>。<br>
-        匯入後若只有一份，會直接問你要不要立刻還原；多份的話再到「💾 備份」分頁按你要那份的「還原」即可。</dd>
+      <dd>看面板最下面的 <strong>💻 換一台電腦用</strong>那區，有兩種方式任選（兩種都會自動把目前進度一起帶走）：<br>
+        <strong>① 用檔案：</strong>按「存成檔案」下載 → 把檔案傳到新電腦（雲端、隨身碟、傳給自己都行）→ 在新電腦打開同一個網站、點書籤，在那區按「讀取檔案」選那個檔案。<br>
+        <strong>② 用文字（免存檔）：</strong>按「複製文字」→ 把那段文字貼到雲端筆記 / 通訊軟體 → 在新電腦按「貼上文字」，<strong>貼上後就會自動讀進來</strong>。<br>
+        讀進來後若只有一份，會直接問你要不要立刻套用；多份的話就在上方清單按你要那份的「還原」即可。</dd>
 
       <dt>同一份存檔兩台電腦來回搬，備份會越堆越多嗎？</dt>
-      <dd>不會。每份備份都有專屬的識別碼，匯入時只要是<strong>同一份</strong>就直接覆蓋（也可以拿舊版蓋回現在的存檔），是新的才會新增，所以兩邊來回同步清單也保持乾淨。</dd>
+      <dd>不會。每份備份都有專屬的識別碼，讀進來時只要是<strong>同一份</strong>就直接覆蓋（也可以拿舊版蓋回現在的進度），是新的才會新增，所以兩邊來回同步清單也保持乾淨。</dd>
 
-      <dt>點了書籤都沒反應？</dt>
-      <dd>少數網站有比較嚴格的安全限制，會擋住這類小工具，這種情況會跳出提示。換個網站、或在這個教學頁上試就正常。</dd>
+      <dt id="faq-blocked">點了書籤沒反應，或跳出「這個網站擋住了小工具」？</dt>
+      <dd>少數網站（例如開了「Trusted Types」這類安全機制的）會在它的安全設定裡，<strong>禁止任何外部小工具在頁面上載入、建立畫面</strong>——這是該網站為了防範惡意程式碼做的保護，書籤工具也會被一起擋下，<strong>從外部沒辦法繞過</strong>。<br>這不是工具壞掉：同一顆書籤在大多數網站（或這個教學頁）上點都正常。換句話說，能不能用是<strong>由那個網站決定</strong>的，不是這裡的設定問題。</dd>
 
       <dt>備份會不會不見？</dt>
-      <dd>備份存在你這台電腦的瀏覽器裡。如果你清掉瀏覽器資料就會一起被清掉，所以重要存檔記得偶爾用「匯出所有備份」存一份檔案備著。</dd>
+      <dd>備份存在你這台電腦的瀏覽器裡。如果你清掉瀏覽器資料就會一起被清掉，所以重要存檔記得偶爾用最下面「💻 換一台電腦用 → 存成檔案」存一份檔案備著。</dd>
     </dl>
   </div>
 
@@ -281,13 +340,23 @@
 <script>
   // 依目前頁面網址，自動算出工具程式的完整網址，部署到任何網域都能正確指向。
   var toolUrl = new URL('tool.js', location.href).href;
+  // 被擋時要帶使用者去看的說明（本頁 FAQ 的「為什麼被擋」那段）。
+  var faqUrl = location.href.split('#')[0] + '#faq-blocked';
 
   // 書籤程式碼：已裝過就直接開窗，否則去本站載入工具。
+  // 部分網站開了 Trusted Types（CSP require-trusted-types-for 'script'），
+  // 把字串塞進 script.src 會「當場」丟 TypeError（連 onerror 都來不及觸發）。
+  // 用 try/catch 包住，被擋時跳友善提示、並開啟說明頁 FAQ 解釋原因，而不是默默在 console 報錯。
+  // （這類網站連面板用的 innerHTML 也會被擋，硬載也無法運作，所以直接提示、不硬上。）
   var code = "javascript:(function(){if(window.__SDM__){window.__SDM__.open();return;}" +
-             "var s=document.createElement('script');" +
+             "var f='" + faqUrl + "';" +
+             "function blocked(m){alert(m);try{window.open(f,'_blank');}catch(e){location.href=f;}}" +
+             "try{var s=document.createElement('script');" +
              "s.src='" + toolUrl + "?t='+Date.now();" +
-             "s.onerror=function(){alert('這個網站擋住了小工具，沒辦法在這裡使用，換個網站試試。');};" +
-             "document.head.appendChild(s);})();";
+             "s.onerror=function(){blocked('這個網站擋住了小工具，沒辦法在這裡使用。\\n幫你開啟說明，看看是什麼原因。');};" +
+             "document.head.appendChild(s);}" +
+             "catch(e){blocked('這個網站有嚴格的安全限制，擋住了小工具，沒辦法在這裡使用。\\n幫你開啟說明，看看是什麼原因。');}" +
+             "})();";
 
   document.getElementById('bookmarklet').setAttribute('href', code);
   document.getElementById('codeBox').textContent = code;
