@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.1';
+  var VERSION = '1.1.0';
 
   if (window.__SDL__) { window.__SDL__.open(); return; }
 

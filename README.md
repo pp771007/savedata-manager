@@ -12,8 +12,8 @@
 
 [![前往線上頁面](https://img.shields.io/badge/🔗%20前往線上頁面-pp771007.github.io%2Fsavedata--manager-38bdf8?style=for-the-badge)](https://pp771007.github.io/savedata-manager/)
 
-![備份版](https://img.shields.io/badge/備份版-v1.7.1-22c55e?style=flat-square)
-![精簡版](https://img.shields.io/badge/精簡版-v1.1.1-0284c7?style=flat-square)
+![備份版](https://img.shields.io/badge/備份版-v1.7.0-22c55e?style=flat-square)
+![精簡版](https://img.shields.io/badge/精簡版-v1.1.0-0284c7?style=flat-square)
 ![tech](https://img.shields.io/badge/Vanilla_JS-無框架-f7df1e?style=flat-square)
 ![privacy](https://img.shields.io/badge/隱私-不上傳資料-16a34a?style=flat-square)
 
@@ -67,8 +67,6 @@
 
 之後在任何網站點一下書籤，右側就會滑出管理視窗。
 
-> 📱 **手機也能用**：安裝教學頁會依裝置自動切到「手機」分頁，提供 iPhone（Safari）／安卓 Chrome／Firefox 各自的安裝步驟。手機沒有書籤列可拖曳，流程是「複製程式碼 → 自己建一個書籤 → 把書籤網址換成程式碼」，之後在網址列打書籤名稱即可叫出工具。
-
 ## 📂 檔案結構
 
 | 檔案 | 說明 |
@@ -110,13 +108,11 @@ python -m http.server 8000
 
 ### 📦 精簡版（`tool-lite.js`）
 
-- **v1.1.1** — 安裝教學頁（`lite.html`）新增手機版安裝指引：步驟一改為「電腦／手機」分頁、依裝置自動切換，手機再分 Safari／安卓 Chrome／Firefox 各自步驟。
 - **v1.1.0** — 面板精簡：四顆全寬大按鈕改為「📤 把存檔帶走 / 📥 從別台讀回來」兩組各兩顆的小按鈕，砍掉按鈕小字與重複說明、移除「N 項」等技術雜訊，覆蓋警告與確認框收短；安裝頁同步加上自動循環的拖曳示範動畫。
 - **v1.0.0** — 首個版本：整包匯出（檔案 / base64 文字字串）、直接覆蓋匯入並自動重新整理、覆蓋寫入撞配額自動回滾。
 
 ### 💾 備份版（`tool.js`）
 
-- **v1.7.1** — 安裝教學頁（`index.html`）新增手機版安裝指引：步驟一改為「電腦／手機」分頁、依裝置（User-Agent）自動切換，手機再分 Safari／安卓 Chrome／Firefox 各自步驟。
 - **v1.7.0** — 面板改為**單一畫面、無分頁、無首屏**：打開就直接看到「💾 立即備份 → 📂 我的備份（還原）→ 💻 換一台電腦用」，常用動作零導航、步驟比原本兩分頁更少；換電腦同樣常見，直接攤在同頁、用較小按鈕收短，不藏起來。換電腦時**一律自動把目前進度一起打包**（用設計取代警告文字）；「備份至此」更名「存到這格」並降為次要動作；立即備份是第一眼的主按鈕、取名改選填，**事後可點備份名字（旁有 ✏️）改名**；還原 / 匯入後整頁重整改用大提示蓋版避免誤以為當掉。安裝頁新增**自動循環的拖曳示範動畫**。
 - **v1.6.0** — 匯出前偵測「目前存檔還沒備份」並詢問是否先備份一份一起帶走（完全沒備份時可一鍵備份＋匯出）；「匯出 / 匯入」分頁新增備份狀態列（共幾筆、最新一筆、未備份警示），釐清「匯出的是備份清單、不是網頁當下存檔」。
 - **v1.5.0** — IndexedDB 開不起來時（Firefox 用本機檔 `file://` 開啟、或關閉 cookie 的網站）自動改用 `localStorage` 當備份倉庫，讓備份 / 還原 / 匯出入仍可使用；空間不足時提示處理。
