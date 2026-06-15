@@ -170,6 +170,29 @@
   details.alt[open] > summary::before { content: "▾ "; }
   details.alt .inner { padding: 0 16px 16px; }
 
+  /* 安裝分頁（電腦 / 手機） */
+  .itabs { display: flex; gap: 8px; margin: 14px 0 20px; background: #0b1120; border: 1px solid var(--line); border-radius: 12px; padding: 6px; }
+  .itab { flex: 1; text-align: center; padding: 11px 8px; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 1rem; color: var(--muted); user-select: none; transition: background .12s, color .12s; }
+  .itab.on { background: var(--accent); color: #04263b; }
+  .ipane { display: none; }
+  .ipane.on { display: block; }
+  .pane-intro { font-size: .95rem; color: var(--muted); margin: 0 0 14px; }
+
+  /* 手機教學：複製鈕 + 瀏覽器子分頁 */
+  .copyrow { margin: 0 0 16px; }
+  .copyrow .btn { width: 100%; font-size: 1.02rem; padding: 14px; }
+  .btabs { display: flex; gap: 8px; margin: 18px 0 16px; flex-wrap: wrap; }
+  .btab { padding: 8px 15px; border: 1px solid var(--line); border-radius: 20px; cursor: pointer; font-size: .86rem; font-weight: 700; color: var(--muted); background: var(--card2); user-select: none; }
+  .btab.on { border-color: var(--accent); color: var(--accent); background: rgba(56,189,248,.1); }
+  .bpane { display: none; }
+  .bpane.on { display: block; }
+  .bpane ol { padding-left: 0; margin: 0; list-style: none; counter-reset: m; }
+  .bpane ol li { position: relative; padding: 2px 0 14px 40px; margin: 0 0 0 13px; border-left: 2px solid var(--line); font-size: .93rem; }
+  .bpane ol li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .bpane ol li::before { counter-increment: m; content: counter(m); position: absolute; left: -14px; top: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #04263b; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: .82rem; }
+  .bpane strong { color: var(--accent); }
+  code { background: #0b1120; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-family: monospace; font-size: .85em; color: #cbd5e1; }
+
   button.btn {
     background: var(--accent2); color: #052e13;
     border: none; border-radius: 8px; font-weight: 700;
@@ -243,41 +266,97 @@
 
   <!-- 步驟一：安裝 -->
   <div class="card">
-    <h2><span class="badge">1</span> 把按鈕拖到「書籤列」</h2>
-    <p class="lead">把下面這顆<strong>按住、往上拖到書籤列放開</strong>就裝好了（書籤列＝瀏覽器上方那排網站捷徑）。</p>
+    <h2><span class="badge">1</span> 安裝書籤</h2>
+    <p class="lead">選你的裝置，照下面的步驟做就好。</p>
 
-    <div class="drag-zone">
-      <div class="bm-center">
-        <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，往上拖到書籤列！">💾 存檔管家</a>
-        <span class="grab-hint">👆 按住這顆，往上拖到書籤列放開</span>
-      </div>
+    <div class="itabs">
+      <div class="itab" data-itab="pc">💻 電腦</div>
+      <div class="itab" data-itab="mobile">📱 手機</div>
     </div>
 
-    <div class="demo" aria-hidden="true">
-      <div class="demo-bar">
-        <span class="demo-slot">⭐ 放這裡</span>
-        <span class="demo-ic">📁 我的最愛</span>
-        <span class="demo-ic">📁 購物</span>
+    <!-- 電腦：拖到書籤列 -->
+    <div class="ipane" data-ipane="pc">
+      <p class="pane-intro">把下面這顆<strong>按住、往上拖到書籤列放開</strong>就裝好了（書籤列＝瀏覽器上方那排網站捷徑）。</p>
+
+      <div class="drag-zone">
+        <div class="bm-center">
+          <a id="bookmarklet" class="bookmarklet" href="#" title="按住我，往上拖到書籤列！">💾 存檔管家</a>
+          <span class="grab-hint">👆 按住這顆，往上拖到書籤列放開</span>
+        </div>
       </div>
-      <span class="demo-chip">💾 存檔管家</span>
-      <span class="demo-cursor">👆</span>
-      <span class="demo-cap">↑ 大概像這樣</span>
+
+      <div class="demo" aria-hidden="true">
+        <div class="demo-bar">
+          <span class="demo-slot">⭐ 放這裡</span>
+          <span class="demo-ic">📁 我的最愛</span>
+          <span class="demo-ic">📁 購物</span>
+        </div>
+        <span class="demo-chip">💾 存檔管家</span>
+        <span class="demo-cursor">👆</span>
+        <span class="demo-cap">↑ 大概像這樣</span>
+      </div>
+
+      <details class="alt">
+        <summary>拖不動？或看不到書籤列？點這裡用「複製貼上」的方式</summary>
+        <div class="inner">
+          <p style="font-size:.92rem">沒問題，改用這個方法也一樣：</p>
+          <ol style="font-size:.92rem;padding-left:20px;margin:0">
+            <li>先按一下下面的綠色按鈕，把程式碼複製起來。</li>
+            <li>在書籤列上<strong>按右鍵 → 新增書籤 / 加入網頁</strong>。</li>
+            <li>名稱隨便打（例如「存檔管家」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
+          </ol>
+          <p style="margin:14px 0 0"><button class="btn" id="copyBtn">📋 複製程式碼</button></p>
+          <pre id="codeBox">載入中…</pre>
+          <p class="tip">看不到書籤列？在 Chrome / Edge 按 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> 就會出現。</p>
+        </div>
+      </details>
     </div>
 
-    <details class="alt">
-      <summary>拖不動？或看不到書籤列？點這裡用「複製貼上」的方式</summary>
-      <div class="inner">
-        <p style="font-size:.92rem">沒問題，改用這個方法也一樣：</p>
-        <ol style="font-size:.92rem;padding-left:20px;margin:0">
-          <li>先按一下下面的綠色按鈕，把程式碼複製起來。</li>
-          <li>在書籤列上<strong>按右鍵 → 新增書籤 / 加入網頁</strong>。</li>
-          <li>名稱隨便打（例如「存檔管家」），<strong>網址欄整段貼上</strong>剛剛複製的內容，存檔完成。</li>
+    <!-- 手機：複製程式碼 → 建書籤 → 把書籤網址換成程式碼 -->
+    <div class="ipane" data-ipane="mobile">
+      <p class="pane-intro">手機沒有可以拖曳的「書籤列」，做法是：<strong>複製程式碼 → 自己建一個書籤 → 把書籤的網址換成這段程式碼</strong>，之後在網址列打書籤名稱就能叫出來。</p>
+
+      <div class="copyrow"><button class="btn" id="copyBtnM">📋 複製程式碼</button></div>
+      <pre id="codeBoxM">載入中…</pre>
+
+      <div class="btabs">
+        <div class="btab" data-btab="ios">🍎 iPhone / iPad（Safari）</div>
+        <div class="btab" data-btab="chrome">🤖 安卓 Chrome</div>
+        <div class="btab" data-btab="firefox">🦊 Firefox</div>
+      </div>
+
+      <div class="bpane" data-bpane="ios">
+        <ol>
+          <li>先按上面的 <strong>📋 複製程式碼</strong>，把程式碼複製起來。</li>
+          <li>隨便開一個網頁，按下方中間的「分享」圖示 → <strong>加入書籤</strong>，先存起來（名稱用預設沒關係）。</li>
+          <li>按網址列旁的書本圖示打開書籤清單，找到剛剛那筆，按 <strong>編輯</strong>（或在那筆上左滑）。</li>
+          <li>名稱改成好認的（例如「存檔管家」），把<strong>網址那一欄整段刪掉、貼上剛剛複製的程式碼</strong>，完成。</li>
+          <li>以後要用：在想備份的網站，於上方網址列<strong>打書籤名稱</strong>，點下面跳出的那筆書籤，面板就會滑出來。</li>
         </ol>
-        <p style="margin:14px 0 0"><button class="btn" id="copyBtn">📋 複製程式碼</button></p>
-        <pre id="codeBox">載入中…</pre>
-        <p class="tip">看不到書籤列？在 Chrome / Edge 按 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> 就會出現。</p>
       </div>
-    </details>
+
+      <div class="bpane" data-bpane="chrome">
+        <ol>
+          <li>先按上面的 <strong>📋 複製程式碼</strong>，把程式碼複製起來。</li>
+          <li>隨便開一個網頁，按右上角 <strong>⋮</strong> → 點上方的 <strong>☆</strong> 把它加入書籤。</li>
+          <li>再按 <strong>⋮</strong> → <strong>書籤</strong>，找到剛剛那筆，按它右邊的 <strong>⋮</strong> → <strong>編輯</strong>。</li>
+          <li>名稱改成好認的（例如「存檔管家」），把<strong>網址欄整段換成剛剛複製的程式碼</strong>，儲存。</li>
+          <li>以後要用：在想備份的網站，於網址列<strong>打書籤名稱</strong>，從下方建議清單點那筆書籤觸發。</li>
+        </ol>
+        <p class="tip">⚠️ 不能直接把程式碼貼到網址列：Chrome 會自動把開頭的 <code>javascript:</code> 去掉，一定要走「編輯書籤網址」這條路。</p>
+      </div>
+
+      <div class="bpane" data-bpane="firefox">
+        <ol>
+          <li>先按上面的 <strong>📋 複製程式碼</strong>，把程式碼複製起來。</li>
+          <li>隨便開一個網頁，按右上角 <strong>⋮</strong> → <strong>加入書籤</strong>。</li>
+          <li>按 <strong>⋮</strong> → <strong>書籤</strong>，長按剛剛那筆 → <strong>編輯</strong>。</li>
+          <li>名稱改成好認的，把<strong>網址換成剛剛複製的程式碼</strong>，儲存。</li>
+          <li>以後要用：在網址列<strong>打書籤名稱</strong>，點建議清單裡那筆即可。</li>
+        </ol>
+        <p class="tip">🦊 Firefox 對這類書籤的支援最好，手機想長期用建議用它。</p>
+      </div>
+    </div>
   </div>
 
   <!-- 步驟二：使用 -->
@@ -286,7 +365,7 @@
     <p class="lead">裝好之後，以後在任何網站都能用它。</p>
     <ol class="steps">
       <li>打開你想備份存檔的網站（例如某個網頁遊戲、線上工具）。</li>
-      <li>點一下書籤列上的 <strong>💾 存檔管家</strong>。</li>
+      <li>叫出你的 <strong>💾 存檔管家</strong> 書籤（電腦在書籤列上點；手機在網址列打書籤名稱再選它）。</li>
       <li>畫面右邊滑出小視窗：最上面一顆大大的 <strong>💾 立即備份</strong>，下面是<strong>你存過的備份</strong>（每份都有「還原」），再往下是 <strong>💻 換一台電腦用</strong>。</li>
       <li>要存就按最上面、要回到以前按「還原」、要搬去別台看最下面那區。看完按右上角 ✕ 收起來。</li>
     </ol>
@@ -360,6 +439,7 @@
 
   document.getElementById('bookmarklet').setAttribute('href', code);
   document.getElementById('codeBox').textContent = code;
+  document.getElementById('codeBoxM').textContent = code;
 
   function toast(msg) {
     var t = document.getElementById('toast');
@@ -368,19 +448,47 @@
     setTimeout(function(){ t.classList.remove('show'); }, 1600);
   }
 
-  document.getElementById('copyBtn').addEventListener('click', function () {
-    var doCopy = navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject();
-    doCopy.then(function () { toast('複製好了！去書籤列貼上吧'); })
-          .catch(function () {
-            var box = document.getElementById('codeBox');
-            var range = document.createRange();
-            range.selectNodeContents(box);
-            var sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            toast('請按 Ctrl+C 複製已選取的文字');
-          });
-  });
+  // 共用複製：成功就走剪貼簿，失敗（手機 / 無權限）就選取讓使用者手動複製。
+  function wireCopy(btnId, boxId) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var doCopy = navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject();
+      doCopy.then(function () { toast('複製好了！照下面的步驟貼到書籤'); })
+            .catch(function () {
+              var box = document.getElementById(boxId);
+              var range = document.createRange();
+              range.selectNodeContents(box);
+              var sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
+              toast('已選取，請長按 → 複製');
+            });
+    });
+  }
+  wireCopy('copyBtn', 'codeBox');
+  wireCopy('copyBtnM', 'codeBoxM');
+
+  // 分頁切換（電腦/手機、手機內的瀏覽器子分頁），依資料屬性配對。
+  function bindTabs(tabSel, paneSel, tabAttr, paneAttr) {
+    var tabs = [].slice.call(document.querySelectorAll(tabSel));
+    var panes = [].slice.call(document.querySelectorAll(paneSel));
+    function show(key) {
+      tabs.forEach(function (t) { t.classList.toggle('on', t.getAttribute(tabAttr) === key); });
+      panes.forEach(function (p) { p.classList.toggle('on', p.getAttribute(paneAttr) === key); });
+    }
+    tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute(tabAttr)); }); });
+    return show;
+  }
+  var showPlatform = bindTabs('.itab', '.ipane', 'data-itab', 'data-ipane');
+  var showBrowser  = bindTabs('.btab', '.bpane', 'data-btab', 'data-bpane');
+
+  // 依裝置自動切到對應分頁：手機 → 手機分頁，並選對瀏覽器子分頁。
+  var ua = navigator.userAgent;
+  var isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  var isMobile = isIOS || /Android/i.test(ua) || /Mobile/i.test(ua);
+  showPlatform(isMobile ? 'mobile' : 'pc');
+  showBrowser(isIOS ? 'ios' : (/Firefox|FxiOS/i.test(ua) ? 'firefox' : 'chrome'));
 </script>
 </body>
 </html>
