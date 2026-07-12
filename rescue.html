@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>放置天堂 · 救援頁</title>
+<link rel="icon" href="favicon.svg">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 22px 16px 40px; background: #0b1220; color: #e2e8f0;
+         font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; line-height: 1.7; }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 22px; color: #f5d46c; }
+  .sub { margin: 0 0 20px; font-size: 13px; color: #94a3b8; }
+  .card { padding: 16px; margin-bottom: 16px; border: 1px solid #334155; border-radius: 12px; background: #111c2e; }
+  .card h2 { margin: 0 0 8px; font-size: 15px; color: #cbd5e1; }
+  .card p { margin: 0 0 8px; font-size: 14px; color: #cbd5e1; }
+  .card p:last-child { margin-bottom: 0; }
+  .ok { color: #6ee7b7; font-weight: 700; }
+  .warn { color: #fca5a5; }
+  code { padding: 1px 5px; border-radius: 4px; background: #1e293b; color: #fcd34d; font-size: 13px; }
+  button { width: 100%; padding: 16px; border: 1px solid #b68a39; border-radius: 10px;
+           background: linear-gradient(180deg, #2a3f5f, #0f1c33); color: #f8e7bb;
+           font-size: 17px; font-weight: 800; cursor: pointer; }
+  button:hover { filter: brightness(1.15); }
+  button:disabled { opacity: .55; cursor: default; }
+  #log { margin-top: 14px; font-size: 13px; white-space: pre-line; color: #94a3b8; }
+  a { color: #7dd3fc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛟 放置天堂 · 救援頁</h1>
+  <p class="sub">給「遊戲網址打不開」的人用的。這一頁不在遊戲的資料夾底下，所以壞掉的離線快取攔不到它。</p>
+
+  <div class="card">
+    <h2>什麼情況要用這頁</h2>
+    <p>打開遊戲後，Safari 顯示 <span class="warn">「無法打開網頁。（WebKitBlobResource 錯誤 1）」</span>，或畫面一片空白、怎麼重整都一樣。重開機、更新手機都沒用。</p>
+    <p>原因是手機把遊戲的<b>離線快取</b>清壞了（快取的目錄還在、檔案本體被系統清掉），遊戲載入時讀到空的檔案就整頁死掉。</p>
+  </div>
+
+  <div class="card">
+    <h2>這顆按鈕會做什麼</h2>
+    <p>只做一件事：<b>把遊戲的離線快取整組清掉</b>（順便解除快取程式的註冊），讓遊戲下次打開時像第一次來一樣，重新從網路下載。</p>
+  </div>
+
+  <button id="fix">🛠 清除離線快取，回到遊戲</button>
+  <div id="log"></div>
+</div>
+
+<script>
+const GAME_URL = 'https://pp771007.github.io/idle-lineage-class/';
+
+const log = document.getElementById('log');
+const btn = document.getElementById('fix');
+const say = (s) => { log.textContent += s + '\n'; };
+
+btn.onclick = async () => {
+  btn.disabled = true;
+  log.textContent = '';
+  try {
+    let sw = 0;
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+      const regs = await navigator.serviceWorker.getRegistrations();   // 整個網域的註冊都拿得到（不分資料夾）
+      for (const r of regs) { await r.unregister(); sw++; }
+    }
+    say(`已解除快取程式：${sw} 個`);
+
+    let cn = 0;
+    if (window.caches) {
+      const keys = await caches.keys();
+      for (const k of keys) { await caches.delete(k); cn++; }
+    }
+    say(`已清除離線快取：${cn} 組`);
+    say('完成，3 秒後回到遊戲…');
+    setTimeout(() => { location.href = GAME_URL; }, 3000);
+  } catch (e) {
+    say('清除時發生錯誤：' + (e && e.message ? e.message : e));
+    say('請直接回到遊戲試試看：' + GAME_URL);
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
